@@ -1,4 +1,4 @@
-# Local development: postgres, redis, backend.
+# Local development: nginx on :8090 (API + optional built UI). Vite dev UI on :8080 proxies API to :8090.
 # Optional metrics stack: docker compose --profile monitoring up -d
 # Production: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # Required prod env vars are enforced in docker-compose.prod.yml (see file header).
@@ -40,8 +40,6 @@ services:
     build: .
     container_name: secureshare-backend
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,7 +52,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret}
       APP_ENV: ${APP_ENV:-local}
       NODE_ENV: ${NODE_ENV:-development}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:8080}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
       # Dev only. Production must set ENCRYPTION_KEY (see docker-compose.prod.yml).
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
     healthcheck:
@@ -73,13 +72,71 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_ENCATCH_PUBLISHABLE_KEY: ${VITE_ENCATCH_PUBLISHABLE_KEY:-}
+        VITE_ENCATCH_FORM_ID: ${VITE_ENCATCH_FORM_ID:-}
+    container_name: secureshare-frontend-build
+    restart: "no"
+    volumes:
+      - frontend_dist:/target
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: secureshare-nginx
+    restart: unless-stopped
+    ports:
+      # :8090 — API gateway (Vite proxies here). Use http://localhost:8090 when not running Vite.
+      - "8090:80"
+    volumes:
+      - ./monitoring/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - frontend_dist:/usr/share/nginx/html:ro
+      - nginx_logs:/var/log/nginx-mtail
+    # Volume may retain image symlinks (access.log -> stdout); replace with a real file for mtail.
+    command:
+      - /bin/sh
+      - -c
+      - |
+        rm -f /var/log/nginx-mtail/access.log /var/log/nginx-mtail/error.log
+        touch /var/log/nginx-mtail/access.log
+        exec nginx -g 'daemon off;'
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
+
+  mtail:
+    profiles: [monitoring]
+    image: ghcr.io/google/mtail:latest
+    container_name: secureshare-mtail
+    restart: unless-stopped
+    command:
+      - -progs
+      - /etc/mtail
+      - -logs
+      - /var/log/nginx-mtail/access.log
+      - -logtostderr
+    volumes:
+      - ./monitoring/mtail:/etc/mtail:ro
+      - nginx_logs:/var/log/nginx-mtail:ro
+    ports:
+      - "3903:3903"
+    depends_on:
+      - nginx
+
   prometheus:
     profiles: [monitoring]
     image: prom/prometheus:v2.55.1
     container_name: secureshare-prometheus
     restart: unless-stopped
     ports:
-      - "9090:9090"
+      # :9091 avoids conflict with Cursor/other tools on host :9090
+      - "9091:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -89,6 +146,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      mtail:
+        condition: service_started
 
   grafana:
     profiles: [monitoring]
@@ -112,3 +171,5 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+  nginx_logs:
+  frontend_dist:

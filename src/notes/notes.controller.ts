@@ -28,7 +28,7 @@ function getPublicAppUrl(): string {
   if (process.env.PUBLIC_APP_URL) return process.env.PUBLIC_APP_URL;
   return process.env.NODE_ENV === 'production'
     ? 'https://1note.xyz'
-    : 'http://localhost:5173';
+    : 'http://localhost:8080';
 }
 const PUBLIC_APP_URL = getPublicAppUrl();
 
