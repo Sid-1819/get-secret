@@ -7,3 +7,8 @@ scrape_configs:
     static_configs:
       - targets: ["backend:3000"]
     metrics_path: /metrics
+
+  - job_name: "mtail"
+    static_configs:
+      - targets: ["mtail:3903"]
+    metrics_path: /metrics
