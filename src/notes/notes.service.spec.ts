@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { NotePayloadMode, Prisma } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { EncryptionService } from '../encryption/encryption.service';
 import { PasswordService } from '../password/password.service';
@@ -19,10 +19,44 @@ type SecureNoteCreateArgs = {
   data: Record<string, unknown>;
 };
 
+function makeClientNoteEnvelope(): string {
+  return JSON.stringify({
+    v: 1,
+    salt: Buffer.alloc(16, 1).toString('base64'),
+    note: {
+      iv: Buffer.alloc(12, 2).toString('base64'),
+      c: Buffer.alloc(16, 3).toString('base64'),
+      t: Buffer.alloc(16, 4).toString('base64'),
+    },
+  });
+}
+
 describe('NotesService', () => {
   let service: NotesService;
   let prisma: PrismaService;
   let encryptionService: EncryptionService;
+
+  const secureNoteCreate = jest.fn();
+  const prismaServiceMock = {
+    secureNote: {
+      create: secureNoteCreate,
+      update: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    secureNoteAttachment: {
+      findFirst: jest.fn().mockResolvedValue(null),
+    },
+    $queryRaw: jest.fn(),
+    $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        secureNote: { create: secureNoteCreate },
+        secureNoteAttachment: {
+          create: jest.fn().mockResolvedValue({ id: 'att-1' }),
+        },
+      };
+      return fn(tx);
+    }),
+  };
 
   const mockRedis = {
     isEnabled: false,
@@ -50,20 +84,28 @@ describe('NotesService', () => {
     mockPasswordService.compare.mockResolvedValue(true);
     mockPasswordService.hash.mockResolvedValue('hashedpassword');
     process.env.ENCRYPTION_KEY = '0'.repeat(64);
+    secureNoteCreate.mockReset();
+    prismaServiceMock.secureNoteAttachment.findFirst.mockReset();
+    prismaServiceMock.secureNoteAttachment.findFirst.mockResolvedValue(null);
+    (prismaServiceMock.$transaction as jest.Mock).mockImplementation(
+      async (fn: (tx: unknown) => Promise<unknown>) => {
+        const tx = {
+          secureNote: { create: secureNoteCreate },
+          secureNoteAttachment: {
+            create: jest.fn().mockResolvedValue({ id: 'att-1' }),
+          },
+        };
+        return fn(tx);
+      },
+    );
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotesService,
         EncryptionService,
         {
           provide: PrismaService,
-          useValue: {
-            secureNote: {
-              create: jest.fn(),
-              update: jest.fn(),
-              findFirst: jest.fn(),
-            },
-            $queryRaw: jest.fn(),
-          },
+          useValue: prismaServiceMock,
         },
         { provide: RedisService, useValue: mockRedis },
         { provide: PasswordService, useValue: mockPasswordService },
@@ -93,6 +135,8 @@ describe('NotesService', () => {
       id: 'id-1',
       slug: 'abc123base64url',
       content: '', // set by mock from encrypted payload
+      payloadMode: NotePayloadMode.SERVER_ENCRYPTED,
+      hasAttachments: false,
       passwordHash: null,
       expiresAt: null,
       lastViewedAt: null,
@@ -105,15 +149,14 @@ describe('NotesService', () => {
     };
 
     it('creates a note with encrypted content and returns it with a generated slug', async () => {
-      (prisma.secureNote.create as jest.Mock).mockImplementation(
+      secureNoteCreate.mockImplementation(
         ({ data }: { data: Record<string, unknown> }) =>
           Promise.resolve({ ...createdNote, ...data, content: data.content }),
       );
 
       const result = await service.create(dto);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- same reference as jest.fn() in PrismaService test double
-      const createMock = prisma.secureNote.create as jest.Mock<
+      const createMock = secureNoteCreate as jest.Mock<
         Promise<unknown>,
         [SecureNoteCreateArgs]
       >;
@@ -123,21 +166,24 @@ describe('NotesService', () => {
       expect(call.data.content).toMatch(/^[A-Za-z0-9+/]+=*$/);
       expect(encryptionService.decrypt(result.content)).toBe(dto.content);
       expect(call.data.slug).toBeDefined();
+      expect(call.data.payloadMode).toBe(NotePayloadMode.SERVER_ENCRYPTED);
+      expect(call.data.hasAttachments).toBe(false);
       expect(call.data.passwordHash).toBeUndefined();
       expect(mockPasswordService.hash).not.toHaveBeenCalled();
       expect(typeof call.data.slug).toBe('string');
-      expect(call.data.slug.length).toBeGreaterThan(0);
+      expect((call.data.slug as string).length).toBeGreaterThan(0);
       expect(call.data.expiresAt).toBeUndefined();
       expect(call.data.maxViews).toBeUndefined();
       expect(mockNoteCreateTotal.inc).toHaveBeenCalledTimes(1);
     });
 
-    it('hashes and stores password when provided', async () => {
+    it('hashes and stores password when provided (client ciphertext)', async () => {
+      const envelope = makeClientNoteEnvelope();
       const dtoWithPassword: CreateNoteDto = {
-        content: 'content',
+        content: envelope,
         password: 'MyPass1!',
       };
-      (prisma.secureNote.create as jest.Mock).mockImplementation(
+      secureNoteCreate.mockImplementation(
         ({ data }: { data: Record<string, unknown> }) =>
           Promise.resolve({ ...createdNote, ...data, content: data.content }),
       );
@@ -145,13 +191,14 @@ describe('NotesService', () => {
       await service.create(dtoWithPassword);
 
       expect(mockPasswordService.hash).toHaveBeenCalledWith('MyPass1!');
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- same reference as jest.fn() in PrismaService test double
-      const createMock = prisma.secureNote.create as jest.Mock<
+      const createMock = secureNoteCreate as jest.Mock<
         Promise<unknown>,
         [SecureNoteCreateArgs]
       >;
       const call = createMock.mock.calls[0][0];
       expect(call.data.passwordHash).toBe('hashedpassword');
+      expect(call.data.content).toBe(envelope);
+      expect(call.data.payloadMode).toBe(NotePayloadMode.CLIENT_CIPHERTEXT);
     });
 
     it('passes expiresAt and maxViews when provided', async () => {
@@ -160,15 +207,14 @@ describe('NotesService', () => {
         expiresAt: '2030-01-01T00:00:00.000Z',
         maxViews: 5,
       };
-      (prisma.secureNote.create as jest.Mock).mockImplementation(
+      secureNoteCreate.mockImplementation(
         ({ data }: { data: Record<string, unknown> }) =>
           Promise.resolve({ ...createdNote, ...data, content: data.content }),
       );
 
       await service.create(dtoWithOpts);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- same reference as jest.fn() in PrismaService test double
-      const createMock = prisma.secureNote.create as jest.Mock<
+      const createMock = secureNoteCreate as jest.Mock<
         Promise<unknown>,
         [SecureNoteCreateArgs]
       >;
@@ -186,7 +232,7 @@ describe('NotesService', () => {
           clientVersion: 'x',
         },
       );
-      (prisma.secureNote.create as jest.Mock)
+      secureNoteCreate
         .mockRejectedValueOnce(err)
         .mockImplementationOnce(({ data }: { data: Record<string, unknown> }) =>
           Promise.resolve({ ...createdNote, ...data, content: data.content }),
@@ -195,8 +241,7 @@ describe('NotesService', () => {
       const result = await service.create(dto);
 
       expect(encryptionService.decrypt(result.content)).toBe(dto.content);
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- same reference as jest.fn() in PrismaService test double
-      const createMock = prisma.secureNote.create as jest.Mock<
+      const createMock = secureNoteCreate as jest.Mock<
         Promise<unknown>,
         [SecureNoteCreateArgs]
       >;
@@ -206,11 +251,10 @@ describe('NotesService', () => {
 
     it('rethrows non-P2002 errors', async () => {
       const err = new Error('DB connection failed');
-      (prisma.secureNote.create as jest.Mock).mockRejectedValue(err);
+      secureNoteCreate.mockRejectedValue(err);
 
       await expect(service.create(dto)).rejects.toThrow('DB connection failed');
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- same reference as jest.fn() in PrismaService test double
-      const createMock = prisma.secureNote.create as jest.Mock<
+      const createMock = secureNoteCreate as jest.Mock<
         Promise<unknown>,
         [SecureNoteCreateArgs]
       >;
@@ -227,6 +271,8 @@ describe('NotesService', () => {
         id: 'id-1',
         slug: 'the-slug',
         content: encryptedContent,
+        payloadMode: NotePayloadMode.SERVER_ENCRYPTED,
+        hasAttachments: false,
         passwordHash: null,
         expiresAt: null,
         lastViewedAt: null,
@@ -245,7 +291,12 @@ describe('NotesService', () => {
       const result = await service.readBySlug('the-slug');
 
       expect(result).not.toBeNull();
-      expect(result).toEqual({ success: true, content: plainContent });
+      expect(result).toEqual({
+        success: true,
+        content: plainContent,
+        payloadMode: NotePayloadMode.SERVER_ENCRYPTED,
+        attachment: null,
+      });
       expect(mockNoteReadTotal.inc).toHaveBeenCalledWith({
         source: 'postgres',
       });
@@ -258,6 +309,8 @@ describe('NotesService', () => {
         id: 'id-1',
         slug: 'cached-slug',
         content: encryptedContent,
+        payloadMode: NotePayloadMode.SERVER_ENCRYPTED,
+        hasAttachments: false,
         passwordHash: null,
         expiresAt: null,
         lastViewedAt: null,
@@ -277,16 +330,23 @@ describe('NotesService', () => {
       const result = await service.readBySlug('cached-slug');
 
       expect(result).not.toBeNull();
-      expect(result).toEqual({ success: true, content: plainContent });
+      expect(result).toEqual({
+        success: true,
+        content: plainContent,
+        payloadMode: NotePayloadMode.SERVER_ENCRYPTED,
+        attachment: null,
+      });
       expect(mockNoteReadTotal.inc).toHaveBeenCalledWith({ source: 'redis' });
     });
 
     it('returns PASSWORD_REQUIRED when note has password and none provided', async () => {
-      const encryptedContent = encryptionService.encrypt('secret');
+      const clientContent = makeClientNoteEnvelope();
       const dbNote = {
         id: 'id-1',
         slug: 'protected-slug',
-        content: encryptedContent,
+        content: clientContent,
+        payloadMode: NotePayloadMode.CLIENT_CIPHERTEXT,
+        hasAttachments: false,
         passwordHash: 'hashed',
         expiresAt: null,
         lastViewedAt: null,
@@ -308,11 +368,13 @@ describe('NotesService', () => {
     });
 
     it('returns INVALID_PASSWORD when password is wrong', async () => {
-      const encryptedContent = encryptionService.encrypt('secret');
+      const clientContent = makeClientNoteEnvelope();
       const dbNote = {
         id: 'id-1',
         slug: 'protected-slug',
-        content: encryptedContent,
+        content: clientContent,
+        payloadMode: NotePayloadMode.CLIENT_CIPHERTEXT,
+        hasAttachments: false,
         passwordHash: 'hashed',
         expiresAt: null,
         lastViewedAt: null,
@@ -337,13 +399,14 @@ describe('NotesService', () => {
       expect(rawMock).not.toHaveBeenCalled();
     });
 
-    it('returns content when password is correct', async () => {
-      const plainContent = 'secret';
-      const encryptedContent = encryptionService.encrypt(plainContent);
+    it('returns opaque content when password is correct (client ciphertext)', async () => {
+      const clientContent = makeClientNoteEnvelope();
       const dbNote = {
         id: 'id-1',
         slug: 'protected-slug',
-        content: encryptedContent,
+        content: clientContent,
+        payloadMode: NotePayloadMode.CLIENT_CIPHERTEXT,
+        hasAttachments: false,
         passwordHash: 'hashed',
         expiresAt: null,
         lastViewedAt: null,
@@ -361,7 +424,12 @@ describe('NotesService', () => {
 
       const result = await service.readBySlug('protected-slug', 'correct');
 
-      expect(result).toEqual({ success: true, content: plainContent });
+      expect(result).toEqual({
+        success: true,
+        content: clientContent,
+        payloadMode: NotePayloadMode.CLIENT_CIPHERTEXT,
+        attachment: null,
+      });
       expect(mockPasswordService.compare).toHaveBeenCalledWith(
         'correct',
         'hashed',

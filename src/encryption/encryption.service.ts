@@ -55,6 +55,22 @@ export class EncryptionService implements OnModuleInit {
   }
 
   decrypt(payload: string): string {
+    return this.decryptToBytes(payload).toString('utf8');
+  }
+
+  /** AES-256-GCM encrypt arbitrary bytes (server-side path for attachments). */
+  encryptBytes(plaintext: Buffer): string {
+    const iv = randomBytes(IV_LENGTH);
+    const cipher = createCipheriv(ALGORITHM, this.key, iv, {
+      authTagLength: AUTH_TAG_LENGTH,
+    });
+    const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    const payload = Buffer.concat([iv, encrypted, authTag]);
+    return payload.toString('base64');
+  }
+
+  decryptToBytes(payload: string): Buffer {
     const buf = Buffer.from(payload, 'base64');
     if (
       buf.length < IV_LENGTH + AUTH_TAG_LENGTH ||
@@ -72,6 +88,6 @@ export class EncryptionService implements OnModuleInit {
     return Buffer.concat([
       Buffer.from(decipher.update(ciphertext)),
       Buffer.from(decipher.final()),
-    ]).toString('utf8');
+    ]);
   }
 }

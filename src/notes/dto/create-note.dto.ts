@@ -13,13 +13,13 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-const CONTENT_MAX_LENGTH = 1_048_576; // 1MB
-const MAX_VIEWS_CAP = 1000;
+export const CONTENT_MAX_LENGTH = 1_048_576; // 1MB
+export const MAX_VIEWS_CAP = 1000;
 
-const PASSWORD_MIN_LENGTH = 8;
-const PASSWORD_MAX_LENGTH = 128;
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
 
-function isFutureDate(value: unknown): boolean {
+export function isFutureDate(value: unknown): boolean {
   if (value == null || value === '') return true;
   const date = new Date(value as string);
   return !Number.isNaN(date.getTime()) && date.getTime() > Date.now();
@@ -34,7 +34,7 @@ const IsFutureDate = () =>
     },
   });
 
-function isStrongPassword(value: unknown): boolean {
+export function isStrongPassword(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   const s = value;
   if (s.length < PASSWORD_MIN_LENGTH || s.length > PASSWORD_MAX_LENGTH)

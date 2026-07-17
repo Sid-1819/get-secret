@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { EncryptionService } from './encryption.service';
 
 describe('EncryptionService', () => {
@@ -35,6 +36,23 @@ describe('EncryptionService', () => {
       expect(service.decrypt(service.encrypt(''))).toBe('');
       const unicode = 'café 日本語';
       expect(service.decrypt(service.encrypt(unicode))).toBe(unicode);
+    });
+  });
+
+  describe('encryptBytes / decryptToBytes', () => {
+    it('round-trips binary including non-UTF8 bytes', () => {
+      const plain = Buffer.concat([randomBytes(256), Buffer.from([0, 255, 0])]);
+      const enc = service.encryptBytes(plain);
+      expect(service.decryptToBytes(enc).equals(plain)).toBe(true);
+    });
+
+    it('round-trips UTF-8 as bytes', () => {
+      const text = 'hello';
+      expect(
+        service
+          .decryptToBytes(service.encryptBytes(Buffer.from(text, 'utf8')))
+          .toString('utf8'),
+      ).toBe(text);
     });
   });
 

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Headers,
   HttpCode,
   HttpException,
@@ -10,11 +11,16 @@ import {
   Post,
   ForbiddenException,
   NotFoundException,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateNoteDto } from './dto/create-note.dto';
+import { CreateMultipartNoteDto } from './dto/create-multipart-note.dto';
 import { RateLimitGuard } from '../redis/rate-limit.guard';
 import { NotesService } from './notes.service';
+import { MULTIPART_FILE_FIELD_MAX_BYTES } from './attachment.constants';
 
 const NOTE_PASSWORD_HEADER = 'x-note-password';
 
@@ -44,7 +50,29 @@ export class NotesController {
     };
   }
 
+  @Post('multipart')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MULTIPART_FILE_FIELD_MAX_BYTES },
+    }),
+  )
+  async createNoteMultipart(
+    @Body() dto: CreateMultipartNoteDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    const note = await this.notesService.createMultipart(dto, file);
+    const url = `${PUBLIC_APP_URL.replace(/\/$/, '')}/s/${note.slug}`;
+    return {
+      slug: note.slug,
+      url,
+      expiresAt: note.expiresAt?.toISOString() ?? null,
+      maxViews: note.maxViews ?? null,
+    };
+  }
+
   @Get(':slug')
+  @Header('Cache-Control', 'no-store')
   async readNote(
     @Param('slug') slug: string,
     @Headers(NOTE_PASSWORD_HEADER) password?: string,
@@ -78,6 +106,10 @@ export class NotesController {
       });
     }
 
-    return { content: result.content };
+    return {
+      payloadMode: result.payloadMode,
+      content: result.content,
+      attachment: result.attachment,
+    };
   }
 }

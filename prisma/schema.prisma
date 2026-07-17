@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NotePayloadMode {
+  SERVER_ENCRYPTED
+  CLIENT_CIPHERTEXT
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users User[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id])
+  secureNotes SecureNote[]
+}
+
+model SecureNote {
+  id             String           @id @default(uuid())
+  slug           String           @unique
+  content        String
+  payloadMode    NotePayloadMode  @default(SERVER_ENCRYPTED)
+  hasAttachments Boolean          @default(false)
+  passwordHash   String?
+  expiresAt      DateTime?
+  lastViewedAt   DateTime?
+  maxViews       Int?
+  viewCount      Int              @default(0)
+  isDeleted      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  createdBy      String?
+
+  userId       String?
+  user         User?                  @relation(fields: [userId], references: [id])
+  attachments  SecureNoteAttachment[]
+
+  @@index([slug])
+  @@index([expiresAt])
+}
+
+model SecureNoteAttachment {
+  id           String   @id @default(uuid())
+  noteId       String
+  note         SecureNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  mimeType     String
+  originalName String
+  payload      String
+  createdAt    DateTime @default(now())
+
+  @@index([noteId])
+}

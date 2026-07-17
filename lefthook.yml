@@ -1,0 +1,28 @@
+# https://lefthook.dev/
+min_version: 1.6.0
+
+pre-commit:
+  parallel: true
+  commands:
+    eslint:
+      glob:
+        - "src/**/*.ts"
+        - "test/**/*.ts"
+      run: pnpm exec eslint --fix {staged_files}
+      stage_fixed: true
+    eslint-root:
+      glob: "prisma.config.ts"
+      run: pnpm exec eslint --fix {staged_files}
+      stage_fixed: true
+    prettier:
+      glob:
+        - "src/**/*.ts"
+        - "test/**/*.ts"
+        - "prisma.config.ts"
+      run: pnpm exec prettier --write {staged_files}
+      stage_fixed: true
+
+pre-push:
+  commands:
+    test:
+      run: pnpm test
