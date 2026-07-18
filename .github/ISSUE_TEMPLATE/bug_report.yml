@@ -1,0 +1,78 @@
+name: Bug report
+description: Report something broken in the get-secret API backend
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve get-secret. Please do **not** include real secrets, passphrases, or production note URLs in this report.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: e.g. Creating a note with maxViews=1 returns 500 when Redis is unavailable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps, curl commands, or test cases.
+      placeholder: |
+        1. Set ENCRYPTION_KEY=...
+        2. Run `pnpm run start:dev`
+        3. POST /s with ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Release tag, package version, or git SHA.
+      placeholder: e.g. 0.0.1 or abc1234
+    validations:
+      required: false
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Local development
+        - Docker Compose
+        - Production / hosted
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or errors
+      description: Stack traces or API responses. Redact secrets and tokens.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues for duplicates.
+          required: true
+        - label: I have not included real secret content in this report.
+          required: true
