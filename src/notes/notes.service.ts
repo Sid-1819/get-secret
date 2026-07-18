@@ -129,31 +129,6 @@ export class NotesService {
 
     const cacheKey = `${CACHE_KEY_PREFIX}${slug}`;
 
-    if (this.redis.isEnabled) {
-      const cached = await this.redis.get<SecureNote>(cacheKey);
-      if (cached) {
-        this.noteReadTotal.inc({ source: 'redis' });
-        this.incrementViewCountOnly(slug)
-          .then(({ invalidate }) => {
-            if (invalidate) return this.redis.del(cacheKey);
-          })
-          .catch(() => {});
-        const content =
-          cached.payloadMode === NotePayloadMode.CLIENT_CIPHERTEXT
-            ? cached.content
-            : this.encryptionService.decrypt(cached.content);
-        const attachment = cached.hasAttachments
-          ? await this.loadAttachmentForRead(cached.id, cached.payloadMode)
-          : null;
-        return {
-          success: true,
-          payloadMode: cached.payloadMode,
-          content,
-          attachment,
-        };
-      }
-    }
-
     const rows = await this.prisma.$queryRaw<SecureNote[]>`
       UPDATE "SecureNote"
       SET "viewCount" = "viewCount" + 1
@@ -204,35 +179,6 @@ export class NotesService {
     );
     if (remainingSec <= 0) return 1;
     return Math.min(remainingSec, maxTtl);
-  }
-
-  /**
-   * Increments view count for the note by slug. Returns whether cache should be invalidated (maxViews reached).
-   */
-  private async incrementViewCountOnly(
-    slug: string,
-  ): Promise<{ invalidate: boolean }> {
-    const rows = await this.prisma.$queryRaw<
-      { viewCount: number; maxViews: number | null; id: string }[]
-    >`
-      UPDATE "SecureNote"
-      SET "viewCount" = "viewCount" + 1
-      WHERE "slug" = ${slug}
-        AND "isDeleted" = false
-        AND ("expiresAt" IS NULL OR "expiresAt" > now())
-        AND ("maxViews" IS NULL OR "viewCount" < "maxViews")
-      RETURNING id, "viewCount", "maxViews"
-    `;
-    const row = rows[0];
-    if (!row) return { invalidate: false };
-    const invalidate = row.maxViews != null && row.viewCount >= row.maxViews;
-    if (invalidate) {
-      await this.prisma.secureNote.update({
-        where: { id: row.id },
-        data: { isDeleted: true },
-      });
-    }
-    return { invalidate };
   }
 
   async create(dto: CreateNoteDto): Promise<SecureNote> {

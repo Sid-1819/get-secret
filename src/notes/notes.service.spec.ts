@@ -302,7 +302,7 @@ describe('NotesService', () => {
       });
     });
 
-    it('returns note with decrypted content when read from Redis cache', async () => {
+    it('returns note after atomic increment even when metadata is from Redis cache', async () => {
       const plainContent = 'secret from cache';
       const encryptedContent = encryptionService.encrypt(plainContent);
       const cachedNote = {
@@ -324,7 +324,7 @@ describe('NotesService', () => {
       mockRedis.isEnabled = true;
       mockRedis.get.mockResolvedValue(cachedNote);
       (prisma.$queryRaw as jest.Mock).mockResolvedValue([
-        { id: 'id-1', viewCount: 2, maxViews: 2 },
+        { ...cachedNote, viewCount: 2 },
       ]);
 
       const result = await service.readBySlug('cached-slug');
@@ -336,7 +336,39 @@ describe('NotesService', () => {
         payloadMode: NotePayloadMode.SERVER_ENCRYPTED,
         attachment: null,
       });
-      expect(mockNoteReadTotal.inc).toHaveBeenCalledWith({ source: 'redis' });
+      expect(mockNoteReadTotal.inc).toHaveBeenCalledWith({
+        source: 'postgres',
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- same reference as jest.fn() in PrismaService test double
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('returns null when atomic increment fails despite stale Redis cache', async () => {
+      const encryptedContent = encryptionService.encrypt('burned');
+      const cachedNote = {
+        id: 'id-1',
+        slug: 'burned-slug',
+        content: encryptedContent,
+        payloadMode: NotePayloadMode.SERVER_ENCRYPTED,
+        hasAttachments: false,
+        passwordHash: null,
+        expiresAt: null,
+        lastViewedAt: null,
+        maxViews: 1,
+        viewCount: 0,
+        isDeleted: false,
+        createdAt: new Date(),
+        createdBy: null,
+        userId: null,
+      };
+      mockRedis.isEnabled = true;
+      mockRedis.get.mockResolvedValue(cachedNote);
+      (prisma.$queryRaw as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.readBySlug('burned-slug');
+
+      expect(result).toBeNull();
+      expect(mockNoteReadTotal.inc).not.toHaveBeenCalled();
     });
 
     it('returns PASSWORD_REQUIRED when note has password and none provided', async () => {
