@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "prepare": "lefthook install",
+    "prepare": "node -e \"if (require('fs').existsSync('.git')) require('child_process').execSync('lefthook install', { stdio: 'inherit' })\"",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
