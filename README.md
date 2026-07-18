@@ -1,106 +1,134 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# get-secret API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend for **get-secret** — a secure, ephemeral secret-sharing service. Create one-time notes with optional passphrases, expiry, view limits, and file attachments. Secrets are encrypted at rest and destroyed after use.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Public demo: [getsecret.visionly.dev](https://getsecret.visionly.dev)
 
-## Description
+## Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Encrypted at rest** — AES-256-GCM via a server-side `ENCRYPTION_KEY`; plaintext is never stored.
+- **Self-destructing** — Notes expire by time (`expiresAt`) or views (`maxViews`, including burn-after-read with `maxViews: 1`).
+- **Passphrase protection** — Optional bcrypt-hashed passphrases with brute-force limits.
+- **File attachments** — Multipart upload with MIME validation and size limits.
+- **Rate limiting** — Redis-backed limits on create and read endpoints.
+- **Observability** — Prometheus metrics at `/metrics`; optional Grafana stack via Docker Compose profile.
 
-## Project setup
+## Tech stack
+
+- [NestJS](https://nestjs.com/) — API framework
+- [Prisma](https://www.prisma.io/) + PostgreSQL — persistence
+- [Redis](https://redis.io/) — caching and rate limiting
+- [Prometheus](https://prometheus.io/) — metrics
+
+## Getting started
+
+**Requirements:** Node.js 22+, [pnpm](https://pnpm.io/), PostgreSQL 15+, Redis 7+.
 
 ```bash
-$ pnpm install
+pnpm install
+cp .env.example .env
 ```
 
-Copy `.env.example` to `.env` and set `ENCRYPTION_KEY` (required). Use a 32-byte key in hex (64 characters). Generate one with:
+Set `ENCRYPTION_KEY` in `.env` (required). Use a 32-byte key as hex (64 characters):
 
 ```bash
 openssl rand -hex 32
 ```
 
-## Compile and run the project
+Start Postgres and Redis locally (or use Docker Compose below), then:
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm run start:dev
 ```
 
-## Run tests
+The API listens on `http://localhost:3000` by default.
+
+### Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `REDIS_URL` | Yes | Redis connection string |
+| `ENCRYPTION_KEY` | Yes | 32-byte key (64 hex or 44 base64 chars) |
+| `PUBLIC_APP_URL` | No | Base URL for note links in API responses |
+| `PORT` | No | HTTP port (default `3000`) |
+
+See [`.env.example`](.env.example) for defaults.
+
+## Docker Compose
+
+Run the full stack (Postgres, Redis, API, frontend build, NGINX gateway):
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+docker compose up -d
 ```
+
+- API gateway: `http://localhost:8090`
+- Postgres: `localhost:5432`
+- Redis: `localhost:6379`
+
+Optional monitoring (Prometheus + Grafana + mtail):
+
+```bash
+docker compose --profile monitoring up -d
+```
+
+- Prometheus: `http://localhost:9091`
+- Grafana: `http://localhost:3002` (default `admin` / `admin`)
+
+## API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/s` | Create a note (JSON body) |
+| `POST` | `/s/multipart` | Create a note with optional file attachment |
+| `GET` | `/s/:slug` | Read a note (increments view count; may delete when limits hit) |
+| `GET` | `/metrics` | Prometheus metrics |
+
+### Create a note
+
+```bash
+curl -s -X POST http://localhost:3000/s \
+  -H 'Content-Type: application/json' \
+  -d '{"content":"hello","maxViews":1,"expiresAt":"2026-12-31T23:59:59.000Z"}'
+```
+
+Response:
+
+```json
+{
+  "slug": "...",
+  "url": "http://localhost:8080/s/...",
+  "expiresAt": "2026-12-31T23:59:59.000Z",
+  "maxViews": 1
+}
+```
+
+Passphrase-protected reads use the `X-Note-Password` header.
+
+For a typed client and CLI, see the [SDK](../sdk/README.md).
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm run start:dev` | Dev server with watch |
+| `pnpm run start:prod` | Production (`prisma migrate deploy` + Node) |
+| `pnpm run build` | Compile TypeScript |
+| `pnpm run test` | Unit tests |
+| `pnpm run test:e2e` | End-to-end tests |
+| `pnpm run lint` | ESLint |
 
 ## Deployment
 
-**Render:** Set the Start Command to `pnpm run start:prod`. This runs `prisma migrate deploy` before starting the app so the database schema is applied on each deploy. Ensure `DATABASE_URL` and `ENCRYPTION_KEY` are set in the service Environment.
+**Render:** Set the start command to `pnpm run start:prod`. This runs `prisma migrate deploy` before starting the app. Ensure `DATABASE_URL` and `ENCRYPTION_KEY` are set in the service environment.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+**Docker:** Build and run the production image from the included [`Dockerfile`](Dockerfile).
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Roadmap
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+See [ROADMAP.md](./ROADMAP.md) for shipped features, work in progress, and planned next steps (Kubernetes, Helm, security docs, structured logging, and more).
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Private — see repository settings.

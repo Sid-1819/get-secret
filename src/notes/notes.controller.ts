@@ -27,7 +27,7 @@ const NOTE_PASSWORD_HEADER = 'x-note-password';
 function getPublicAppUrl(): string {
   if (process.env.PUBLIC_APP_URL) return process.env.PUBLIC_APP_URL;
   return process.env.NODE_ENV === 'production'
-    ? 'https://1note.xyz'
+    ? 'https://getsecret.visionly.dev'
     : 'http://localhost:8080';
 }
 const PUBLIC_APP_URL = getPublicAppUrl();

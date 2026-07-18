@@ -9,7 +9,6 @@ async function bootstrap() {
     'http://localhost:3001',
     'http://localhost:5174',
     'http://localhost:8080',
-    'https://1note.siddheshshirdhankar.com',
     'https://getsecret.visionly.dev',
   ];
   app.enableCors({
