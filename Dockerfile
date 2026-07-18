@@ -9,7 +9,7 @@ COPY package.json pnpm-lock.yaml* .npmrc ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 
-RUN pnpm install --frozen-lockfile \
+RUN pnpm install --frozen-lockfile --ignore-scripts \
     && pnpm exec prisma generate
 
 COPY . .
