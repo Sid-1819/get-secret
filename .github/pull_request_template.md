@@ -12,7 +12,8 @@
 
 ## Related issues
 
-<!-- Link issues with "Fixes #123" or "Relates to #456". -->
+<!-- Branches created from an issue (e.g. `42-fix-title`) auto-close that issue when this PR merges.
+     You can also link manually with "Fixes #123" or "Relates to #456". -->
 
 Fixes #
 
