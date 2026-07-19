@@ -16,13 +16,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateNoteDto } from './dto/create-note.dto';
-import { CreateMultipartNoteDto } from './dto/create-multipart-note.dto';
+import { CreateSecretDto } from './dto/create-secret.dto';
+import { CreateMultipartSecretDto } from './dto/create-multipart-secret.dto';
 import { RateLimitGuard } from '../redis/rate-limit.guard';
-import { NotesService } from './notes.service';
+import { SecretsService } from './secrets.service';
 import { MULTIPART_FILE_FIELD_MAX_BYTES } from './attachment.constants';
 
-const NOTE_PASSWORD_HEADER = 'x-note-password';
+const SECRET_PASSWORD_HEADER = 'x-secret-password';
 
 function getPublicAppUrl(): string {
   if (process.env.PUBLIC_APP_URL) return process.env.PUBLIC_APP_URL;
@@ -34,19 +34,19 @@ const PUBLIC_APP_URL = getPublicAppUrl();
 
 @Controller('s')
 @UseGuards(RateLimitGuard)
-export class NotesController {
-  constructor(private readonly notesService: NotesService) {}
+export class SecretsController {
+  constructor(private readonly secretsService: SecretsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createNote(@Body() dto: CreateNoteDto) {
-    const note = await this.notesService.create(dto);
-    const url = `${PUBLIC_APP_URL.replace(/\/$/, '')}/s/${note.slug}`;
+  async createSecret(@Body() dto: CreateSecretDto) {
+    const secret = await this.secretsService.create(dto);
+    const url = `${PUBLIC_APP_URL.replace(/\/$/, '')}/s/${secret.slug}`;
     return {
-      slug: note.slug,
+      slug: secret.slug,
       url,
-      expiresAt: note.expiresAt?.toISOString() ?? null,
-      maxViews: note.maxViews ?? null,
+      expiresAt: secret.expiresAt?.toISOString() ?? null,
+      maxViews: secret.maxViews ?? null,
     };
   }
 
@@ -57,27 +57,27 @@ export class NotesController {
       limits: { fileSize: MULTIPART_FILE_FIELD_MAX_BYTES },
     }),
   )
-  async createNoteMultipart(
-    @Body() dto: CreateMultipartNoteDto,
+  async createSecretMultipart(
+    @Body() dto: CreateMultipartSecretDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    const note = await this.notesService.createMultipart(dto, file);
-    const url = `${PUBLIC_APP_URL.replace(/\/$/, '')}/s/${note.slug}`;
+    const secret = await this.secretsService.createMultipart(dto, file);
+    const url = `${PUBLIC_APP_URL.replace(/\/$/, '')}/s/${secret.slug}`;
     return {
-      slug: note.slug,
+      slug: secret.slug,
       url,
-      expiresAt: note.expiresAt?.toISOString() ?? null,
-      maxViews: note.maxViews ?? null,
+      expiresAt: secret.expiresAt?.toISOString() ?? null,
+      maxViews: secret.maxViews ?? null,
     };
   }
 
   @Get(':slug')
   @Header('Cache-Control', 'no-store')
-  async readNote(
+  async readSecret(
     @Param('slug') slug: string,
-    @Headers(NOTE_PASSWORD_HEADER) password?: string,
+    @Headers(SECRET_PASSWORD_HEADER) password?: string,
   ) {
-    const result = await this.notesService.readBySlug(
+    const result = await this.secretsService.readBySlug(
       slug,
       password?.trim() || undefined,
     );
@@ -101,7 +101,7 @@ export class NotesController {
         code: result.code,
         message:
           result.code === 'PASSWORD_REQUIRED'
-            ? 'This note is protected. Provide the passphrase in the X-Note-Password header.'
+            ? 'This secret is protected. Provide the passphrase in the X-Secret-Password header.'
             : 'Invalid passphrase.',
       });
     }

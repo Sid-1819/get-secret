@@ -2,30 +2,37 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import type { Counter } from 'prom-client';
-import type { SecureNote } from '@prisma/client';
-import { NotePayloadMode, Prisma } from '@prisma/client';
+import type { SecureSecret } from '@prisma/client';
+import { Prisma, SecretPayloadMode } from '@prisma/client';
 import { CACHE_KEY_PREFIX, CACHE_MAX_TTL_SEC } from '../constants';
 import { EncryptionService } from '../encryption/encryption.service';
 import { PasswordService } from '../password/password.service';
-import type { CreateNoteDto } from './dto/create-note.dto';
-import type { CreateMultipartNoteDto } from './dto/create-multipart-note.dto';
+import type { CreateSecretDto } from './dto/create-secret.dto';
+import type { CreateMultipartSecretDto } from './dto/create-multipart-secret.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import {
   assertAllowedMimeType,
   assertValidClientFileEnvelopeJson,
-  assertValidClientNoteEnvelopeJson,
+  assertValidClientSecretEnvelopeJson,
   ATTACHMENT_MAX_BYTES,
   sanitizeOriginalFileName,
 } from './attachment.constants';
 
 const SLUG_BYTES = 12;
 
+/** Fields used from multer memory uploads (`FileInterceptor` default storage). */
+type UploadedSecretFile = {
+  mimetype: string;
+  buffer: Buffer;
+  originalname: string;
+};
+
 function generateSlug(): string {
   return randomBytes(SLUG_BYTES).toString('base64url');
 }
 
-export type ReadNoteAttachment = {
+export type ReadSecretAttachment = {
   mimeType: string;
   originalName: string;
   /**
@@ -35,12 +42,12 @@ export type ReadNoteAttachment = {
   data: string;
 };
 
-export type ReadNoteResult =
+export type ReadSecretResult =
   | {
       success: true;
-      payloadMode: NotePayloadMode;
+      payloadMode: SecretPayloadMode;
       content: string;
-      attachment: ReadNoteAttachment | null;
+      attachment: ReadSecretAttachment | null;
     }
   | {
       success: false;
@@ -49,48 +56,64 @@ export type ReadNoteResult =
   | null;
 
 @Injectable()
-export class NotesService {
+export class SecretsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly encryptionService: EncryptionService,
     private readonly passwordService: PasswordService,
-    @InjectMetric('note_read_total')
-    private readonly noteReadTotal: Counter<string>,
-    @InjectMetric('note_create_total')
-    private readonly noteCreateTotal: Counter<string>,
+    @InjectMetric('secret_read_total')
+    private readonly secretReadTotal: Counter<string>,
+    @InjectMetric('secret_create_total')
+    private readonly secretCreateTotal: Counter<string>,
   ) {}
 
+  private isSecretEligible(secret: SecureSecret): boolean {
+    if (secret.isDeleted) return false;
+    const expiresAt =
+      secret.expiresAt == null
+        ? null
+        : secret.expiresAt instanceof Date
+          ? secret.expiresAt
+          : new Date(secret.expiresAt);
+    if (expiresAt != null && expiresAt <= new Date()) return false;
+    if (secret.maxViews != null && secret.viewCount >= secret.maxViews)
+      return false;
+    return true;
+  }
+
   /**
-   * Find note by slug without incrementing view count. Returns null if not found or expired/deleted/over maxViews.
+   * Find secret by slug without incrementing view count. Returns null if not found or expired/deleted/over maxViews.
+   * Always confirms live DB state; cache is used only to detect and purge stale entries.
    */
-  private async findNoteBySlug(slug: string): Promise<SecureNote | null> {
+  private async findSecretBySlug(slug: string): Promise<SecureSecret | null> {
     const cacheKey = `${CACHE_KEY_PREFIX}${slug}`;
     if (this.redis.isEnabled) {
-      const cached = await this.redis.get<SecureNote>(cacheKey);
-      if (cached) return cached;
+      const cached = await this.redis.get<SecureSecret>(cacheKey);
+      if (cached && !this.isSecretEligible(cached)) {
+        await this.redis.del(cacheKey);
+      }
     }
-    const note = await this.prisma.secureNote.findFirst({
+    const secret = await this.prisma.secureSecret.findFirst({
       where: {
         slug,
         isDeleted: false,
         OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
     });
-    if (!note) return null;
-    if (note.maxViews != null && note.viewCount >= note.maxViews) return null;
-    return note;
+    if (!secret || !this.isSecretEligible(secret)) return null;
+    return secret;
   }
 
   private async loadAttachmentForRead(
-    noteId: string,
-    payloadMode: NotePayloadMode,
-  ): Promise<ReadNoteAttachment | null> {
-    const row = await this.prisma.secureNoteAttachment.findFirst({
-      where: { noteId },
+    secretId: string,
+    payloadMode: SecretPayloadMode,
+  ): Promise<ReadSecretAttachment | null> {
+    const row = await this.prisma.secureSecretAttachment.findFirst({
+      where: { secretId },
     });
     if (!row) return null;
-    if (payloadMode === NotePayloadMode.SERVER_ENCRYPTED) {
+    if (payloadMode === SecretPayloadMode.SERVER_ENCRYPTED) {
       const bytes = this.encryptionService.decryptToBytes(row.payload);
       return {
         mimeType: row.mimeType,
@@ -105,11 +128,11 @@ export class NotesService {
     };
   }
 
-  async readBySlug(slug: string, password?: string): Promise<ReadNoteResult> {
-    const note = await this.findNoteBySlug(slug);
-    if (!note) return null;
+  async readBySlug(slug: string, password?: string): Promise<ReadSecretResult> {
+    const secret = await this.findSecretBySlug(slug);
+    if (!secret) return null;
 
-    if (note.passwordHash) {
+    if (secret.passwordHash) {
       if (password === undefined || password === '') {
         return { success: false, code: 'PASSWORD_REQUIRED' };
       }
@@ -119,7 +142,7 @@ export class NotesService {
       }
       const valid = await this.passwordService.compare(
         password,
-        note.passwordHash,
+        secret.passwordHash,
       );
       if (!valid) {
         await this.redis.recordWrongPasswordAttempt(slug);
@@ -129,9 +152,13 @@ export class NotesService {
 
     const cacheKey = `${CACHE_KEY_PREFIX}${slug}`;
 
-    const rows = await this.prisma.$queryRaw<SecureNote[]>`
-      UPDATE "SecureNote"
-      SET "viewCount" = "viewCount" + 1
+    const rows = await this.prisma.$queryRaw<SecureSecret[]>`
+      UPDATE "SecureSecret"
+      SET "viewCount" = "viewCount" + 1,
+          "isDeleted" = CASE
+            WHEN "maxViews" IS NOT NULL AND "viewCount" + 1 >= "maxViews" THEN true
+            ELSE "isDeleted"
+          END
       WHERE "slug" = ${slug}
         AND "isDeleted" = false
         AND ("expiresAt" IS NULL OR "expiresAt" > now())
@@ -142,20 +169,16 @@ export class NotesService {
     if (!updated) return null;
 
     if (this.redis.isEnabled) {
-      const ttl = this.getCacheTtl(updated);
-      await this.redis.set(cacheKey, updated, ttl);
+      if (updated.isDeleted) {
+        await this.redis.del(cacheKey);
+      } else {
+        const ttl = this.getCacheTtl(updated);
+        await this.redis.set(cacheKey, updated, ttl);
+      }
     }
-
-    if (updated.maxViews != null && updated.viewCount >= updated.maxViews) {
-      await this.prisma.secureNote.update({
-        where: { id: updated.id },
-        data: { isDeleted: true },
-      });
-      if (this.redis.isEnabled) await this.redis.del(cacheKey);
-    }
-    this.noteReadTotal.inc({ source: 'postgres' });
+    this.secretReadTotal.inc({ source: 'postgres' });
     const content =
-      updated.payloadMode === NotePayloadMode.CLIENT_CIPHERTEXT
+      updated.payloadMode === SecretPayloadMode.CLIENT_CIPHERTEXT
         ? updated.content
         : this.encryptionService.decrypt(updated.content);
     const attachment = updated.hasAttachments
@@ -169,43 +192,43 @@ export class NotesService {
     };
   }
 
-  private getCacheTtl(note: SecureNote): number {
+  private getCacheTtl(secret: SecureSecret): number {
     const maxTtl = CACHE_MAX_TTL_SEC;
-    if (note.expiresAt == null) {
+    if (secret.expiresAt == null) {
       return maxTtl;
     }
     const remainingSec = Math.floor(
-      (note.expiresAt.getTime() - Date.now()) / 1000,
+      (secret.expiresAt.getTime() - Date.now()) / 1000,
     );
     if (remainingSec <= 0) return 1;
     return Math.min(remainingSec, maxTtl);
   }
 
-  async create(dto: CreateNoteDto): Promise<SecureNote> {
+  async create(dto: CreateSecretDto): Promise<SecureSecret> {
     return this.createUnified(dto, undefined);
   }
 
   async createMultipart(
-    dto: CreateMultipartNoteDto,
-    file?: Express.Multer.File,
-  ): Promise<SecureNote> {
+    dto: CreateMultipartSecretDto,
+    file?: UploadedSecretFile,
+  ): Promise<SecureSecret> {
     return this.createUnified(dto, file);
   }
 
   private async createUnified(
-    dto: CreateNoteDto | CreateMultipartNoteDto,
-    file: Express.Multer.File | undefined,
-  ): Promise<SecureNote> {
+    dto: CreateSecretDto | CreateMultipartSecretDto,
+    file: UploadedSecretFile | undefined,
+  ): Promise<SecureSecret> {
     const trimmedPassword = dto.password?.trim() ?? '';
     const hasPassword = trimmedPassword !== '';
     const mode = hasPassword
-      ? NotePayloadMode.CLIENT_CIPHERTEXT
-      : NotePayloadMode.SERVER_ENCRYPTED;
+      ? SecretPayloadMode.CLIENT_CIPHERTEXT
+      : SecretPayloadMode.SERVER_ENCRYPTED;
 
     let contentToStore: string;
     if (hasPassword) {
       const raw = dto.content.trim();
-      assertValidClientNoteEnvelopeJson(raw);
+      assertValidClientSecretEnvelopeJson(raw);
       contentToStore = raw;
     } else {
       contentToStore = this.encryptionService.encrypt(dto.content);
@@ -220,7 +243,7 @@ export class NotesService {
 
     if (file) {
       hasAttachments = true;
-      if (mode === NotePayloadMode.SERVER_ENCRYPTED) {
+      if (mode === SecretPayloadMode.SERVER_ENCRYPTED) {
         assertAllowedMimeType(file.mimetype);
         if (
           !Buffer.isBuffer(file.buffer) ||
@@ -237,7 +260,7 @@ export class NotesService {
           payload: this.encryptionService.encryptBytes(file.buffer),
         };
       } else {
-        const meta = dto as CreateMultipartNoteDto;
+        const meta = dto as CreateMultipartSecretDto;
         if (!meta.attachmentMimeType || !meta.attachmentFileName) {
           throw new BadRequestException({
             message:
@@ -273,8 +296,8 @@ export class NotesService {
     for (let attempt = 0; attempt < 8; attempt++) {
       const slug = generateSlug();
       try {
-        const note = await this.prisma.$transaction(async (tx) => {
-          const created = await tx.secureNote.create({
+        const secret = await this.prisma.$transaction(async (tx) => {
+          const created = await tx.secureSecret.create({
             data: {
               slug,
               content: contentToStore,
@@ -286,9 +309,9 @@ export class NotesService {
             },
           });
           if (attachmentInput) {
-            await tx.secureNoteAttachment.create({
+            await tx.secureSecretAttachment.create({
               data: {
-                noteId: created.id,
+                secretId: created.id,
                 mimeType: attachmentInput.mimeType,
                 originalName: attachmentInput.originalName,
                 payload: attachmentInput.payload,
@@ -297,8 +320,8 @@ export class NotesService {
           }
           return created;
         });
-        this.noteCreateTotal.inc();
-        return note;
+        this.secretCreateTotal.inc();
+        return secret;
       } catch (err) {
         const isUniqueViolation =
           err instanceof Prisma.PrismaClientKnownRequestError &&

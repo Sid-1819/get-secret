@@ -69,7 +69,7 @@ describe('RateLimitGuard', () => {
     const response = (caught as HttpException).getResponse() as {
       message?: string;
     };
-    expect(response.message).toMatch(/Too many notes created/i);
+    expect(response.message).toMatch(/Too many secrets created/i);
   });
 
   it('returns generic 429 message for GET over read limit', async () => {

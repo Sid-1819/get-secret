@@ -1,25 +1,29 @@
 import {
-  IsDateString,
-  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
+  MinLength,
+  IsDateString,
+  IsInt,
   Min,
   Max,
-  MinLength,
-  ValidateBy,
   ValidateIf,
+  ValidateBy,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import {
-  CONTENT_MAX_LENGTH,
-  MAX_VIEWS_CAP,
-  PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
-  isFutureDate,
-  isStrongPassword,
-} from './create-note.dto';
+
+export const CONTENT_MAX_LENGTH = 1_048_576; // 1MB
+export const MAX_VIEWS_CAP = 1000;
+
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
+
+export function isFutureDate(value: unknown): boolean {
+  if (value == null || value === '') return true;
+  const date = new Date(value as string);
+  return !Number.isNaN(date.getTime()) && date.getTime() > Date.now();
+}
 
 const IsFutureDate = () =>
   ValidateBy({
@@ -29,6 +33,18 @@ const IsFutureDate = () =>
       defaultMessage: () => 'expiresAt must be a future date',
     },
   });
+
+export function isStrongPassword(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const s = value;
+  if (s.length < PASSWORD_MIN_LENGTH || s.length > PASSWORD_MAX_LENGTH)
+    return false;
+  if (!/[a-z]/.test(s)) return false;
+  if (!/[A-Z]/.test(s)) return false;
+  if (!/[0-9]/.test(s)) return false;
+  if (!/[!@#$%^&*(),.?":{}|<>_\-+=[\]\\;/'`~]/.test(s)) return false;
+  return true;
+}
 
 const IsStrongPassword = () =>
   ValidateBy({
@@ -40,8 +56,7 @@ const IsStrongPassword = () =>
     },
   });
 
-/** Form fields for `POST /s/multipart` (same semantics as JSON create + optional attachment metadata). */
-export class CreateMultipartNoteDto {
+export class CreateSecretDto {
   @IsString()
   @IsNotEmpty({ message: 'content must not be empty' })
   @Transform(({ value }: { value: unknown }): unknown =>
@@ -81,21 +96,4 @@ export class CreateMultipartNoteDto {
     typeof value === 'string' ? value.trim() : value,
   )
   password?: string;
-
-  /** Required when a file is uploaded on the client-ciphertext path (multer may report octet-stream). */
-  @IsOptional()
-  @IsString()
-  @MaxLength(128)
-  @Transform(({ value }: { value: unknown }): unknown =>
-    typeof value === 'string' ? value.trim() : value,
-  )
-  attachmentMimeType?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  @Transform(({ value }: { value: unknown }): unknown =>
-    typeof value === 'string' ? value.trim() : value,
-  )
-  attachmentFileName?: string;
 }

@@ -4,15 +4,15 @@ import {
   makeCounterProvider,
 } from '@willsoto/nestjs-prometheus';
 
-const noteReadTotalProvider = makeCounterProvider({
-  name: 'note_read_total',
-  help: 'Total note reads by source (redis cache or postgres)',
+const secretReadTotalProvider = makeCounterProvider({
+  name: 'secret_read_total',
+  help: 'Total secret reads by source (redis cache or postgres)',
   labelNames: ['source'],
 });
 
-const noteCreateTotalProvider = makeCounterProvider({
-  name: 'note_create_total',
-  help: 'Total notes created',
+const secretCreateTotalProvider = makeCounterProvider({
+  name: 'secret_create_total',
+  help: 'Total secrets created',
 });
 
 const rateLimitChecksTotalProvider = makeCounterProvider({
@@ -33,15 +33,15 @@ const rateLimitRejectedTotalProvider = makeCounterProvider({
     }),
   ],
   providers: [
-    noteReadTotalProvider,
-    noteCreateTotalProvider,
+    secretReadTotalProvider,
+    secretCreateTotalProvider,
     rateLimitChecksTotalProvider,
     rateLimitRejectedTotalProvider,
   ],
   exports: [
     PrometheusModule,
-    noteReadTotalProvider,
-    noteCreateTotalProvider,
+    secretReadTotalProvider,
+    secretCreateTotalProvider,
     rateLimitChecksTotalProvider,
     rateLimitRejectedTotalProvider,
   ],

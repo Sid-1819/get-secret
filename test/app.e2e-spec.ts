@@ -6,7 +6,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { randomBytes } from 'node:crypto';
 
-function makeClientNoteEnvelope(): string {
+function makeClientSecretEnvelope(): string {
   return JSON.stringify({
     v: 1,
     salt: Buffer.alloc(16, 1).toString('base64'),
@@ -18,7 +18,7 @@ function makeClientNoteEnvelope(): string {
   });
 }
 
-type CreateNoteResponseBody = {
+type CreateSecretResponseBody = {
   slug: string;
   url: string;
   expiresAt: unknown;
@@ -53,14 +53,14 @@ describe('App (e2e)', () => {
       .expect('Hello World!');
   });
 
-  describe('POST /s (create note)', () => {
+  describe('POST /s (create secret)', () => {
     it('returns 201 with slug, url, expiresAt, maxViews for valid body', () => {
       return request(app.getHttpServer())
         .post('/s')
         .send({ content: 'hello world' })
         .expect(201)
         .expect((res) => {
-          const body = res.body as CreateNoteResponseBody;
+          const body = res.body as CreateSecretResponseBody;
           expect(body).toHaveProperty('slug');
           expect(typeof body.slug).toBe('string');
           expect(body.slug.length).toBeGreaterThan(0);
@@ -107,7 +107,7 @@ describe('App (e2e)', () => {
     });
 
     it('returns 201 with client ciphertext when password is set', () => {
-      const envelope = makeClientNoteEnvelope();
+      const envelope = makeClientSecretEnvelope();
       return request(app.getHttpServer())
         .post('/s')
         .send({
@@ -133,17 +133,17 @@ describe('App (e2e)', () => {
           await request(app.getHttpServer())
             .post('/s/multipart')
             .set('User-Agent', ua)
-            .field('content', `note ${i}`)
+            .field('content', `secret ${i}`)
             .expect(201);
         }
         await request(app.getHttpServer())
           .post('/s/multipart')
           .set('User-Agent', ua)
-          .field('content', 'note 4')
+          .field('content', 'secret 4')
           .expect(429)
           .expect((res) => {
             const body = res.body as { message?: string };
-            expect(body.message).toMatch(/Too many notes created/i);
+            expect(body.message).toMatch(/Too many secrets created/i);
           });
       },
     );
@@ -152,7 +152,7 @@ describe('App (e2e)', () => {
       const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       return request(app.getHttpServer())
         .post('/s/multipart')
-        .field('content', 'note with file')
+        .field('content', 'secret with file')
         .field('expiresAt', future)
         .field('maxViews', '2')
         .attach('file', Buffer.from('hello file'), {
@@ -168,7 +168,7 @@ describe('App (e2e)', () => {
   });
 
   describe('GET /s/:slug', () => {
-    it('returns payloadMode, content, and attachment for server-encrypted note with file', async () => {
+    it('returns payloadMode, content, and attachment for server-encrypted secret with file', async () => {
       const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       const create = await request(app.getHttpServer())
         .post('/s/multipart')
@@ -202,8 +202,8 @@ describe('App (e2e)', () => {
       expect(read.headers['cache-control']).toMatch(/no-store/i);
     });
 
-    it('returns opaque content for client ciphertext note with password', async () => {
-      const envelope = makeClientNoteEnvelope();
+    it('returns opaque content for client ciphertext secret with password', async () => {
+      const envelope = makeClientSecretEnvelope();
       const create = await request(app.getHttpServer())
         .post('/s')
         .send({
@@ -216,7 +216,7 @@ describe('App (e2e)', () => {
       const slug = (create.body as { slug: string }).slug;
       const read = await request(app.getHttpServer())
         .get(`/s/${slug}`)
-        .set('X-Note-Password', 'Bb2@bbbb')
+        .set('X-Secret-Password', 'Bb2@bbbb')
         .expect(200);
       const body = read.body as {
         payloadMode: string;

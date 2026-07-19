@@ -64,7 +64,7 @@ export class RateLimitGuard implements CanActivate {
         {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           message: isCreate
-            ? 'Too many notes created. Limit: 3 per minute, 10 per 24 hours. Try again later.'
+            ? 'Too many secrets created. Limit: 3 per minute, 10 per 24 hours. Try again later.'
             : 'Too many requests',
         },
         HttpStatus.TOO_MANY_REQUESTS,

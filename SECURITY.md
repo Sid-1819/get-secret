@@ -41,7 +41,7 @@ The following are generally **not** treated as product vulnerabilities:
 
 - Missing rate limits or hardening on **your own** misconfigured self-hosted
   deployment (e.g. exposed Redis/Postgres without authentication)
-- Social engineering of note recipients
+- Social engineering of secret recipients
 - Compromise of a user's browser, device, or network outside this service
 - Denial-of-service at volumes that require infrastructure-level mitigation
 - Issues in third-party dependencies already tracked by Dependabot / upstream
@@ -63,10 +63,10 @@ release notes or advisories if you wish (unless you prefer to remain anonymous).
 
 This is a high-level overview, not a formal threat model (see [ROADMAP.md](./ROADMAP.md)).
 
-- **At rest:** Note payloads are encrypted with AES-256-GCM using a server-side
+- **At rest:** Secret payloads are encrypted with AES-256-GCM using a server-side
   `ENCRYPTION_KEY`.
 - **In transit:** HTTPS is required in production deployments.
-- **Lifecycle:** Notes can expire by time and/or view count; consumed notes are
+- **Lifecycle:** Secrets can expire by time and/or view count; consumed secrets are
   deleted per application logic.
 - **Access control:** Optional passphrases (bcrypt-hashed) and rate limiting
   reduce brute-force and abuse.

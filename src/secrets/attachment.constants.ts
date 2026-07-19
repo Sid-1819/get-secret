@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
-/** Max decoded file size (same order of magnitude as note content cap). */
+/** Max decoded file size (same order of magnitude as secret content cap). */
 export const ATTACHMENT_MAX_BYTES = 1_048_576;
 
 /** Multipart file field size ceiling (bytes on wire). */
@@ -40,7 +40,8 @@ export function sanitizeOriginalFileName(name: string): string {
   return cut;
 }
 
-type ClientNoteJson = {
+/** Wire-format client ciphertext envelope (v1). The `note` key is part of the client protocol. */
+type ClientSecretEnvelopeJson = {
   v: number;
   salt: string;
   note: { iv: string; c: string; t: string };
@@ -57,24 +58,24 @@ function isNonEmptyB64(s: unknown): s is string {
   return typeof s === 'string' && s.length > 0 && /^[A-Za-z0-9+/]+=*$/.test(s);
 }
 
-/** Validate client-side ciphertext envelope stored in `SecureNote.content` when password is set. */
-export function assertValidClientNoteEnvelopeJson(raw: string): void {
+/** Validate client-side ciphertext envelope stored in `SecureSecret.content` when password is set. */
+export function assertValidClientSecretEnvelopeJson(raw: string): void {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw) as unknown;
   } catch {
     throw new BadRequestException({
-      message: 'Invalid client-encrypted note payload',
-      code: 'INVALID_CLIENT_NOTE',
+      message: 'Invalid client-encrypted secret payload',
+      code: 'INVALID_CLIENT_SECRET',
     });
   }
   if (!parsed || typeof parsed !== 'object') {
     throw new BadRequestException({
-      message: 'Invalid client-encrypted note payload',
-      code: 'INVALID_CLIENT_NOTE',
+      message: 'Invalid client-encrypted secret payload',
+      code: 'INVALID_CLIENT_SECRET',
     });
   }
-  const o = parsed as Partial<ClientNoteJson>;
+  const o = parsed as Partial<ClientSecretEnvelopeJson>;
   if (
     o.v !== 1 ||
     !isNonEmptyB64(o.salt) ||
@@ -82,20 +83,20 @@ export function assertValidClientNoteEnvelopeJson(raw: string): void {
     typeof o.note !== 'object'
   ) {
     throw new BadRequestException({
-      message: 'Invalid client-encrypted note payload',
-      code: 'INVALID_CLIENT_NOTE',
+      message: 'Invalid client-encrypted secret payload',
+      code: 'INVALID_CLIENT_SECRET',
     });
   }
-  const n = o.note as Partial<ClientNoteJson['note']>;
+  const n = o.note as Partial<ClientSecretEnvelopeJson['note']>;
   if (!isNonEmptyB64(n.iv) || !isNonEmptyB64(n.c) || !isNonEmptyB64(n.t)) {
     throw new BadRequestException({
-      message: 'Invalid client-encrypted note payload',
-      code: 'INVALID_CLIENT_NOTE',
+      message: 'Invalid client-encrypted secret payload',
+      code: 'INVALID_CLIENT_SECRET',
     });
   }
 }
 
-/** Validate opaque attachment payload for client-encrypted notes. */
+/** Validate opaque attachment payload for client-encrypted secrets. */
 export function assertValidClientFileEnvelopeJson(raw: string): void {
   let parsed: unknown;
   try {

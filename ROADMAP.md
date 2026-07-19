@@ -37,7 +37,7 @@ Status legend: ✅ shipped · 🚧 in progress · 📋 planned
 
 ## Production Readiness
 
-- ✅ Prometheus metrics (`/metrics` — note create/read counters, rate-limit stats).
+- ✅ Prometheus metrics (`/metrics` — secret create/read counters, rate-limit stats).
 - ✅ Health checks (container healthcheck against `/metrics`).
 - 📋 Structured logging (JSON logs with request correlation).
 - 📋 Backup and upgrade documentation.
@@ -51,7 +51,7 @@ Status legend: ✅ shipped · 🚧 in progress · 📋 planned
 - 🚧 Excellent documentation.
 - ✅ REST API (`POST /s`, `POST /s/multipart`, `GET /s/:slug`).
 - ✅ CLI (see [SDK](../sdk/README.md)).
-- 🚧 Comprehensive test suite (unit tests for encryption and notes; e2e coverage expanding).
+- 🚧 Comprehensive test suite (unit tests for encryption and secrets; e2e coverage expanding).
 - 📋 Easy contribution guide.
 
 ---

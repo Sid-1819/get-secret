@@ -3,15 +3,15 @@ export const RATE_LIMIT_WINDOW_SEC = 60;
 export const RATE_LIMIT_MAX_REQUESTS = 30;
 export const RATE_LIMIT_KEY_PREFIX = 'ratelimit:ip:';
 
-/** Create-note rate limits (per IP+User-Agent hash) */
+/** Create-secret rate limits (per IP+User-Agent hash) */
 export const RATE_LIMIT_CREATE_MINUTE_WINDOW_SEC = 60;
 export const RATE_LIMIT_CREATE_MINUTE_MAX = 3;
 export const RATE_LIMIT_CREATE_DAILY_WINDOW_SEC = 86400; // 24h
 export const RATE_LIMIT_CREATE_DAILY_MAX = 10;
 export const RATE_LIMIT_CLIENT_KEY_PREFIX = 'ratelimit:client:';
 
-/** Note cache */
-export const CACHE_KEY_PREFIX = 'note:';
+/** Secret cache */
+export const CACHE_KEY_PREFIX = 'secret:';
 export const CACHE_MAX_TTL_SEC = 3600; // 1 hour
 
 /** Per-slug wrong password rate limit (brute-force protection) */
