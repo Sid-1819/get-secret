@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EncryptionModule } from './encryption/encryption.module';
 import { MetricsModule } from './metrics/metrics.module';
-import { NotesModule } from './notes/notes.module';
+import { SecretsModule } from './secrets/secrets.module';
 import { PasswordModule } from './password/password.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
@@ -15,7 +15,7 @@ import { RedisModule } from './redis/redis.module';
     PasswordModule,
     PrismaModule,
     RedisModule,
-    NotesModule,
+    SecretsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

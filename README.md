@@ -1,13 +1,13 @@
 # get-secret API
 
-Backend for **get-secret** — a secure, ephemeral secret-sharing service. Create one-time notes with optional passphrases, expiry, view limits, and file attachments. Secrets are encrypted at rest and destroyed after use.
+Backend for **get-secret** — a secure, ephemeral secret-sharing service. Create one-time secrets with optional passphrases, expiry, view limits, and file attachments. Secrets are encrypted at rest and destroyed after use.
 
 Public demo: [getsecret.visionly.dev](https://getsecret.visionly.dev)
 
 ## Features
 
 - **Encrypted at rest** — AES-256-GCM via a server-side `ENCRYPTION_KEY`; plaintext is never stored.
-- **Self-destructing** — Notes expire by time (`expiresAt`) or views (`maxViews`, including burn-after-read with `maxViews: 1`).
+- **Self-destructing** — Secrets expire by time (`expiresAt`) or views (`maxViews`, including burn-after-read with `maxViews: 1`).
 - **Passphrase protection** — Optional bcrypt-hashed passphrases with brute-force limits.
 - **File attachments** — Multipart upload with MIME validation and size limits.
 - **Rate limiting** — Redis-backed limits on create and read endpoints.
@@ -50,7 +50,7 @@ The API listens on `http://localhost:3000` by default.
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `REDIS_URL` | Yes | Redis connection string |
 | `ENCRYPTION_KEY` | Yes | 32-byte key (64 hex or 44 base64 chars) |
-| `PUBLIC_APP_URL` | No | Base URL for note links in API responses |
+| `PUBLIC_APP_URL` | No | Base URL for secret links in API responses |
 | `PORT` | No | HTTP port (default `3000`) |
 
 See [`.env.example`](.env.example) for defaults.
@@ -80,12 +80,12 @@ docker compose --profile monitoring up -d
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/s` | Create a note (JSON body) |
-| `POST` | `/s/multipart` | Create a note with optional file attachment |
-| `GET` | `/s/:slug` | Read a note (increments view count; may delete when limits hit) |
+| `POST` | `/s` | Create a secret (JSON body) |
+| `POST` | `/s/multipart` | Create a secret with optional file attachment |
+| `GET` | `/s/:slug` | Read a secret (increments view count; may delete when limits hit) |
 | `GET` | `/metrics` | Prometheus metrics |
 
-### Create a note
+### Create a secret
 
 ```bash
 curl -s -X POST http://localhost:3000/s \
@@ -104,7 +104,7 @@ Response:
 }
 ```
 
-Passphrase-protected reads use the `X-Note-Password` header.
+Passphrase-protected reads use the `X-Secret-Password` header.
 
 For a typed client and CLI, see the [SDK](../sdk/README.md).
 

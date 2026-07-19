@@ -6,14 +6,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve get-secret. Please do **not** include real secrets, passphrases, or production note URLs in this report.
+        Thanks for helping improve get-secret. Please do **not** include real secrets, passphrases, or production secret URLs in this report.
 
   - type: textarea
     id: description
     attributes:
       label: What happened?
       description: A clear description of the bug.
-      placeholder: e.g. Creating a note with maxViews=1 returns 500 when Redis is unavailable.
+      placeholder: e.g. Creating a secret with maxViews=1 returns 500 when Redis is unavailable.
     validations:
       required: true
 

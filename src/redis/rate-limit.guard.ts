@@ -45,7 +45,9 @@ export class RateLimitGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const isCreate = request.method === 'POST' && request.path === '/s';
+    const isCreate =
+      request.method === 'POST' &&
+      (request.path === '/s' || request.path === '/s/multipart');
 
     this.rateLimitChecksTotal.inc();
     const allowed = isCreate
@@ -62,7 +64,7 @@ export class RateLimitGuard implements CanActivate {
         {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           message: isCreate
-            ? 'Too many notes created. Limit: 3 per minute, 10 per 24 hours. Try again later.'
+            ? 'Too many secrets created. Limit: 3 per minute, 10 per 24 hours. Try again later.'
             : 'Too many requests',
         },
         HttpStatus.TOO_MANY_REQUESTS,

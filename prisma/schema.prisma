@@ -6,7 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
-enum NotePayloadMode {
+enum SecretPayloadMode {
   SERVER_ENCRYPTED
   CLIENT_CIPHERTEXT
 }
@@ -25,42 +25,42 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  workspaceId String
-  workspace   Workspace    @relation(fields: [workspaceId], references: [id])
-  secureNotes SecureNote[]
+  workspaceId  String
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id])
+  secureSecrets SecureSecret[]
 }
 
-model SecureNote {
-  id             String           @id @default(uuid())
-  slug           String           @unique
+model SecureSecret {
+  id             String            @id @default(uuid())
+  slug           String            @unique
   content        String
-  payloadMode    NotePayloadMode  @default(SERVER_ENCRYPTED)
-  hasAttachments Boolean          @default(false)
+  payloadMode    SecretPayloadMode @default(SERVER_ENCRYPTED)
+  hasAttachments Boolean           @default(false)
   passwordHash   String?
   expiresAt      DateTime?
   lastViewedAt   DateTime?
   maxViews       Int?
-  viewCount      Int              @default(0)
-  isDeleted      Boolean          @default(false)
-  createdAt      DateTime         @default(now())
+  viewCount      Int               @default(0)
+  isDeleted      Boolean           @default(false)
+  createdAt      DateTime          @default(now())
   createdBy      String?
 
-  userId       String?
-  user         User?                  @relation(fields: [userId], references: [id])
-  attachments  SecureNoteAttachment[]
+  userId      String?
+  user        User?                   @relation(fields: [userId], references: [id])
+  attachments SecureSecretAttachment[]
 
   @@index([slug])
   @@index([expiresAt])
 }
 
-model SecureNoteAttachment {
-  id           String   @id @default(uuid())
-  noteId       String
-  note         SecureNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+model SecureSecretAttachment {
+  id           String       @id @default(uuid())
+  secretId     String
+  secret       SecureSecret @relation(fields: [secretId], references: [id], onDelete: Cascade)
   mimeType     String
   originalName String
   payload      String
-  createdAt    DateTime @default(now())
+  createdAt    DateTime     @default(now())
 
-  @@index([noteId])
+  @@index([secretId])
 }

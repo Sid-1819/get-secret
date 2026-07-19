@@ -36,11 +36,11 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(increase(note_read_total{source=\"redis\"}[5m])) or vector(0)",
+          "expr": "sum(increase(secret_read_total{source=\"redis\"}[5m])) or vector(0)",
           "refId": "A"
         }
       ],
-      "title": "Note reads from Redis (cache hit) - 5m",
+      "title": "Secret reads from Redis (cache hit) - 5m",
       "type": "stat"
     },
     {
@@ -72,11 +72,11 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(increase(note_read_total{source=\"postgres\"}[5m])) or vector(0)",
+          "expr": "sum(increase(secret_read_total{source=\"postgres\"}[5m])) or vector(0)",
           "refId": "A"
         }
       ],
-      "title": "Note reads from Postgres (cache miss) - 5m",
+      "title": "Secret reads from Postgres (cache miss) - 5m",
       "type": "stat"
     },
     {
@@ -108,11 +108,11 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(note_read_total{source=\"redis\"}[5m])) / (sum(rate(note_read_total[5m])) + 1e-9)",
+          "expr": "sum(rate(secret_read_total{source=\"redis\"}[5m])) / (sum(rate(secret_read_total[5m])) + 1e-9)",
           "refId": "A"
         }
       ],
-      "title": "% note reads from Redis (5m rate)",
+      "title": "% secret reads from Redis (5m rate)",
       "type": "stat"
     },
     {
@@ -189,18 +189,18 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(note_read_total{source=\"redis\"}[1m])) by (source)",
+          "expr": "sum(rate(secret_read_total{source=\"redis\"}[1m])) by (source)",
           "legendFormat": "Redis",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(note_read_total{source=\"postgres\"}[1m])) by (source)",
+          "expr": "sum(rate(secret_read_total{source=\"postgres\"}[1m])) by (source)",
           "legendFormat": "Postgres",
           "refId": "B"
         }
       ],
-      "title": "Note reads by source (rate)",
+      "title": "Secret reads by source (rate)",
       "type": "timeseries"
     },
     {
@@ -264,7 +264,7 @@
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "Redis vs Postgres - Note reads",
+  "title": "Redis vs Postgres - Secret reads",
   "uid": "redis-vs-postgres",
   "version": 1
 }

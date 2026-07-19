@@ -87,7 +87,7 @@ export class RedisService implements OnModuleDestroy {
   }
 
   /**
-   * Create-note rate limit: 3 per minute and 10 per 24h per client (IP + user-agent hash).
+   * Create-secret rate limit: 3 per minute and 10 per 24h per client (IP + user-agent hash).
    * Returns true if allowed, false if over either limit.
    */
   async checkCreateRateLimit(clientHash: string): Promise<boolean> {
