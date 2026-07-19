@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   IMAGE_NAME: sid1819/getsecret-ci
 
