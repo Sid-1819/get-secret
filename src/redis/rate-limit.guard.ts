@@ -45,7 +45,9 @@ export class RateLimitGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const isCreate = request.method === 'POST' && request.path === '/s';
+    const isCreate =
+      request.method === 'POST' &&
+      (request.path === '/s' || request.path === '/s/multipart');
 
     this.rateLimitChecksTotal.inc();
     const allowed = isCreate

@@ -125,6 +125,29 @@ describe('App (e2e)', () => {
   });
 
   describe('POST /s/multipart', () => {
+    (process.env.REDIS_URL ? it : it.skip)(
+      'returns 429 after 3 creates per minute (create rate limit)',
+      async () => {
+        const ua = `e2e-multipart-ratelimit-${randomBytes(8).toString('hex')}`;
+        for (let i = 1; i <= 3; i++) {
+          await request(app.getHttpServer())
+            .post('/s/multipart')
+            .set('User-Agent', ua)
+            .field('content', `note ${i}`)
+            .expect(201);
+        }
+        await request(app.getHttpServer())
+          .post('/s/multipart')
+          .set('User-Agent', ua)
+          .field('content', 'note 4')
+          .expect(429)
+          .expect((res) => {
+            const body = res.body as { message?: string };
+            expect(body.message).toMatch(/Too many notes created/i);
+          });
+      },
+    );
+
     it('returns 201 with text file attachment (server-encrypted)', () => {
       const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       return request(app.getHttpServer())
