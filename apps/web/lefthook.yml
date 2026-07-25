@@ -1,0 +1,16 @@
+# https://lefthook.dev/
+min_version: 1.6.0
+
+pre-commit:
+  parallel: true
+  commands:
+    eslint:
+      glob:
+        - "src/**/*.{ts,tsx}"
+      run: pnpm exec eslint --fix {staged_files}
+      stage_fixed: true
+
+pre-push:
+  commands:
+    test:
+      run: pnpm test

@@ -1,0 +1,43 @@
+# https://lefthook.dev/
+min_version: 1.6.0
+
+pre-commit:
+  parallel: true
+  commands:
+    api-eslint:
+      glob: "apps/api/{src,test}/**/*.ts"
+      run: pnpm --filter @getsecret/api exec eslint --fix {staged_files}
+      stage_fixed: true
+
+    api-prettier:
+      glob: "apps/api/{src,test}/**/*.ts"
+      run: pnpm --filter @getsecret/api exec prettier --write {staged_files}
+      stage_fixed: true
+
+    sdk-typecheck:
+      glob: "packages/sdk/**/*.ts"
+      run: pnpm --filter @getsecret/sdk run typecheck
+
+    sdk-test:
+      glob: "packages/sdk/**/*.ts"
+      run: pnpm --filter @getsecret/sdk run test
+
+    cli-typecheck:
+      glob: "packages/cli/**/*.ts"
+      run: pnpm --filter getsecret run typecheck
+
+    web-eslint:
+      glob: "apps/web/src/**/*.{ts,tsx}"
+      run: pnpm --filter @getsecret/web exec eslint --fix {staged_files}
+      stage_fixed: true
+
+    extension-typecheck:
+      glob: "apps/extension/src/**/*.{ts,tsx}"
+      run: pnpm --filter @getsecret/extension run typecheck
+
+pre-push:
+  commands:
+    test:
+      run: pnpm -r --if-present run test
+    build:
+      run: pnpm -r --if-present run build

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Sid-1819/secureShare/security/advisories/new
+    about: Report a security issue privately. Do not open a public issue for vulnerabilities.
+  - name: Roadmap
+    url: https://github.com/Sid-1819/secureShare/blob/main/ROADMAP.md
+    about: See planned work before opening a feature request.

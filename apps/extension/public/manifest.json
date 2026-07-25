@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "getsecret quick save",
+  "version": "0.0.1",
+  "description": "Save focused field text as a shareable secret via the getsecret API.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "getsecret quick save"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["GET_SECRET-ICON-removebg-preview.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

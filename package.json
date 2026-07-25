@@ -1,0 +1,20 @@
+{
+  "name": "getsecret",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "prepare": "lefthook install",
+    "build": "pnpm -r --if-present run build",
+    "test": "pnpm -r --if-present run test",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "dev:api": "pnpm --filter @getsecret/api start:dev",
+    "dev:web": "pnpm --filter @getsecret/web dev",
+    "dev:playground": "pnpm --filter @getsecret/web dev",
+    "dev:extension": "pnpm --filter @getsecret/extension dev",
+    "cli": "pnpm --filter getsecret run cli"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.30.0",
+    "lefthook": "^1.11.14"
+  }
+}

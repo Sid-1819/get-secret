@@ -1,0 +1,14 @@
+# https://lefthook.dev/
+min_version: 1.6.0
+
+pre-commit:
+  commands:
+    typecheck:
+      glob:
+        - "src/**/*.{ts,tsx}"
+      run: pnpm run typecheck
+
+pre-push:
+  commands:
+    build:
+      run: pnpm run build

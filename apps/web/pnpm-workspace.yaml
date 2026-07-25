@@ -1,0 +1,7 @@
+packages:
+  - "."
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  lefthook: true
+  sharp: true
