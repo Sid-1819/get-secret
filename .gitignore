@@ -50,3 +50,6 @@ pids
 
 # Diagnostic reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Personal infra roadmap (not for repo)
+TECH_STACK_FREEZE.md
