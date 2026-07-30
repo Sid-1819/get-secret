@@ -205,9 +205,10 @@ describe('SecretsService', () => {
     });
 
     it('passes expiresAt and maxViews when provided', async () => {
+      const expiresAt = '2030-01-01T00:00:00.000Z';
       const dtoWithOpts: CreateSecretDto = {
         content: 'content',
-        expiresAt: '2030-01-01T00:00:00.000Z',
+        expiresAt,
         maxViews: 5,
       };
       secureSecretCreate.mockImplementation(
@@ -222,7 +223,7 @@ describe('SecretsService', () => {
         [SecureSecretCreateArgs]
       >;
       const call = createMock.mock.calls[0][0];
-      expect(call.data.expiresAt).toEqual(new Date(dtoWithOpts.expiresAt));
+      expect(call.data.expiresAt).toEqual(new Date(expiresAt));
       expect(call.data.maxViews).toBe(5);
       expect(call.data.content).not.toBe(dtoWithOpts.content);
     });
