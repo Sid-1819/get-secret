@@ -12,7 +12,7 @@
     "@types/chrome": "^0.0.280",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "lefthook": "^1.11.14",
+    "lefthook": "^2.1.10",
     "typescript": "~6.0.2",
     "vite": "^8.0.4"
   },
