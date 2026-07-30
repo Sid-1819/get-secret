@@ -7,13 +7,13 @@ pre-commit:
     api-eslint:
       root: "apps/api"
       glob: "apps/api/{src,test}/**/*.ts"
-      run: pnpm exec eslint --fix {staged_files}
+      run: pnpm --dir ../.. --filter @getsecret/api exec eslint --fix {staged_files}
       stage_fixed: true
 
     api-prettier:
       root: "apps/api"
       glob: "apps/api/{src,test}/**/*.ts"
-      run: pnpm exec prettier --write {staged_files}
+      run: pnpm --dir ../.. --filter @getsecret/api exec prettier --write {staged_files}
       stage_fixed: true
 
     sdk-typecheck:
@@ -31,7 +31,7 @@ pre-commit:
     web-eslint:
       root: "apps/web"
       glob: "apps/web/src/**/*.{ts,tsx}"
-      run: pnpm exec eslint --fix {staged_files}
+      run: pnpm --dir ../.. --filter @getsecret/web exec eslint --fix {staged_files}
       stage_fixed: true
 
     extension-typecheck:
