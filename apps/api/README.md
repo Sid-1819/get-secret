@@ -11,7 +11,7 @@ Public demo: [getsecret.visionly.dev](https://getsecret.visionly.dev)
 - **Passphrase protection** — Optional bcrypt-hashed passphrases with brute-force limits.
 - **File attachments** — Multipart upload with MIME validation and size limits.
 - **Rate limiting** — Redis-backed when `REDIS_URL` is set; disabled otherwise (reads still use Postgres).
-- **Observability** — Health at `/health`; Prometheus metrics at `/metrics`; optional Grafana stack via Docker Compose profile.
+- **Observability** — Health at `/health`; Prometheus metrics at `/metrics` (internal network only); optional Grafana stack via Docker Compose profile.
 
 ## Tech stack
 
@@ -76,6 +76,13 @@ docker compose --profile monitoring up -d
 - Prometheus: `http://localhost:9091`
 - Grafana: `http://localhost:3002` (default `admin` / `admin`)
 
+### Metrics and health
+
+- **`GET /health`** — Public via the NGINX gateway (`:8090`). Used by the backend container healthcheck; reports Postgres and Redis status.
+- **`GET /metrics`** — **Not exposed through NGINX.** The gateway returns 404 for `/metrics`. Prometheus (and other scrapers) must reach the backend on the Docker internal network at `backend:3000/metrics`, as configured in [`monitoring/prometheus.yml`](monitoring/prometheus.yml).
+
+For self-hosted deployments with an external Prometheus instance, scrape the backend service directly (e.g. `backend:3000` on the compose network, or a dedicated internal port). Do not publish `/metrics` on your public reverse proxy.
+
 ## API
 
 | Method | Path | Description |
@@ -84,7 +91,7 @@ docker compose --profile monitoring up -d
 | `POST` | `/s/multipart` | Create a secret with optional file attachment |
 | `GET` | `/s/:slug` | Read a secret (increments view count; may delete when limits hit) |
 | `GET` | `/health` | Liveness/readiness-style health (Postgres + Redis protection state) |
-| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/metrics` | Prometheus metrics (internal network only; blocked on NGINX gateway) |
 
 ### Create a secret
 

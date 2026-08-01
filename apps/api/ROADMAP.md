@@ -38,7 +38,7 @@ Status legend: ✅ shipped · 🚧 in progress · 📋 planned
 ## Production Readiness
 
 - ✅ Prometheus metrics (`/metrics` — secret create/read counters, rate-limit stats).
-- ✅ Health checks (container healthcheck against `/metrics`).
+- ✅ Health checks (container healthcheck against `/health`; `/metrics` blocked on public NGINX).
 - 📋 Structured logging (JSON logs with request correlation).
 - 📋 Backup and upgrade documentation.
 
