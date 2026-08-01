@@ -26,8 +26,8 @@ The API returns `{ slug, expiresAt, maxViews }` — clients build share URLs wit
 
 ```bash
 pnpm install
-pnpm dev:api    # API on :3000 (or docker-compose in apps/api)
-pnpm dev:web    # Web on :8080
+pnpm dev:api    # API on :3000 (or `docker compose up` in apps/api → :8090 via nginx)
+pnpm dev:web    # Marketing site on :8080 (not part of docker-compose)
 pnpm cli --help # getsecret CLI
 ```
 

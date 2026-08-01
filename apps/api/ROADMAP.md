@@ -22,7 +22,7 @@ Status legend: ✅ shipped · 🚧 in progress · 📋 planned
 - 📋 Helm Chart.
 - 🚧 Reverse proxy examples (NGINX, Traefik, Caddy).
 
-> **Today:** `docker compose up -d` runs Postgres, Redis, the API, a built frontend, and NGINX. Standalone reverse-proxy recipes for Traefik and Caddy are planned.
+> **Today:** `docker compose up -d` runs Postgres, Redis, the API, and NGINX (API reverse proxy). The marketing site (`apps/web`) deploys separately. Standalone reverse-proxy recipes for Traefik and Caddy are planned.
 
 ---
 

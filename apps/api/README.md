@@ -57,7 +57,7 @@ See [`.env.example`](.env.example) for defaults.
 
 ## Docker Compose
 
-Run the full stack (Postgres, Redis, API, frontend build, NGINX gateway):
+Run the backend stack (Postgres, Redis, API, NGINX gateway). The marketing site (`apps/web`) runs separately — see root README (`pnpm dev:web`).
 
 ```bash
 docker compose up -d
