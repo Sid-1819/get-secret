@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/build
+**/.env
+**/.env*.local
+.git
+.gitignore
+**/*.log
+**/coverage
+**/.nyc_output
+**/.DS_Store
+**/test

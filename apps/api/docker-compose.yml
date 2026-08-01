@@ -36,7 +36,9 @@ services:
       start_period: 5s
 
   backend:
-    build: .
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
     container_name: secureshare-backend
     restart: unless-stopped
     depends_on:

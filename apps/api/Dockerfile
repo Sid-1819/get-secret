@@ -2,36 +2,44 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
-COPY package.json pnpm-lock.yaml* .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/.npmrc ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY apps/extension/package.json ./apps/extension/
+COPY packages/sdk/package.json ./packages/sdk/
 
-COPY prisma ./prisma
-COPY prisma.config.ts ./
+COPY apps/api/prisma ./apps/api/prisma
+COPY apps/api/prisma.config.ts ./apps/api/
 
-RUN pnpm install --frozen-lockfile --ignore-scripts \
-    && pnpm exec prisma generate
+RUN pnpm install --frozen-lockfile --filter @getsecret/api... --ignore-scripts \
+    && pnpm --filter @getsecret/api exec prisma generate
 
-COPY . .
+COPY apps/api ./apps/api
 
-RUN pnpm run build
+RUN pnpm --filter @getsecret/api run build
 
 FROM node:22-alpine AS production
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
-COPY package.json pnpm-lock.yaml* .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/.npmrc ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY apps/extension/package.json ./apps/extension/
+COPY packages/sdk/package.json ./packages/sdk/
+COPY apps/api/prisma ./apps/api/prisma
+COPY apps/api/prisma.config.ts ./apps/api/
 
-COPY prisma ./prisma
-COPY prisma.config.ts ./
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-COPY --from=builder /app/dist ./dist
+RUN pnpm install --prod --frozen-lockfile --filter @getsecret/api... --ignore-scripts \
+    && pnpm --filter @getsecret/api exec prisma generate
 
-# Prod deps include prisma CLI for migrate deploy; generate explicitly after install.
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
-    && pnpm exec prisma generate
+WORKDIR /app/apps/api
 
 EXPOSE 3000
 
