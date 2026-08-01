@@ -14,7 +14,7 @@
     "@types/react-dom": "^19.2.0",
     "lefthook": "^2.1.10",
     "typescript": "~6.0.2",
-    "vite": "^6.4.3"
+    "vite": "^8.0.16"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
