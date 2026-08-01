@@ -52,6 +52,40 @@ describe('App (e2e)', () => {
       .expect('Hello World!');
   });
 
+  describe('GET /health', () => {
+    it('returns postgres ok and redis protection state', () => {
+      const redisUrl = process.env.REDIS_URL?.trim();
+      return request(app.getHttpServer())
+        .get('/health')
+        .expect(200)
+        .expect((res) => {
+          const body = res.body as {
+            status: string;
+            postgres: string;
+            redis: {
+              configured: boolean;
+              connected: boolean;
+              protectionsActive: boolean;
+              mode: string;
+            };
+          };
+          expect(body.status).toBe('ok');
+          expect(body.postgres).toBe('ok');
+          if (redisUrl) {
+            expect(body.redis.configured).toBe(true);
+            expect(['connected', 'degraded']).toContain(body.redis.mode);
+          } else {
+            expect(body.redis).toEqual({
+              configured: false,
+              connected: false,
+              protectionsActive: false,
+              mode: 'disabled',
+            });
+          }
+        });
+    });
+  });
+
   describe('POST /s (create secret)', () => {
     it('returns 201 with slug, expiresAt, maxViews for valid body', () => {
       return request(app.getHttpServer())

@@ -10,19 +10,19 @@ Public demo: [getsecret.visionly.dev](https://getsecret.visionly.dev)
 - **Self-destructing** — Secrets expire by time (`expiresAt`) or views (`maxViews`, including burn-after-read with `maxViews: 1`).
 - **Passphrase protection** — Optional bcrypt-hashed passphrases with brute-force limits.
 - **File attachments** — Multipart upload with MIME validation and size limits.
-- **Rate limiting** — Redis-backed limits on create and read endpoints.
-- **Observability** — Prometheus metrics at `/metrics`; optional Grafana stack via Docker Compose profile.
+- **Rate limiting** — Redis-backed when `REDIS_URL` is set; disabled otherwise (reads still use Postgres).
+- **Observability** — Health at `/health`; Prometheus metrics at `/metrics`; optional Grafana stack via Docker Compose profile.
 
 ## Tech stack
 
 - [NestJS](https://nestjs.com/) — API framework
 - [Prisma](https://www.prisma.io/) + PostgreSQL — persistence
-- [Redis](https://redis.io/) — caching and rate limiting
+- [Redis](https://redis.io/) — optional caching and rate limiting (Redis-protocol compatible: Valkey, Dragonfly, KeyDB, managed Redis)
 - [Prometheus](https://prometheus.io/) — metrics
 
 ## Getting started
 
-**Requirements:** Node.js 22+, [pnpm](https://pnpm.io/), PostgreSQL 15+, Redis 7+.
+**Requirements:** Node.js 22+, [pnpm](https://pnpm.io/), PostgreSQL 15+. Redis is optional for local dev (Postgres-only mode disables rate limits and cache).
 
 ```bash
 pnpm install
@@ -35,7 +35,7 @@ Set `ENCRYPTION_KEY` in `.env` (required). Use a 32-byte key as hex (64 characte
 openssl rand -hex 32
 ```
 
-Start Postgres and Redis locally (or use Docker Compose below), then:
+Start Postgres locally (and optionally Redis), or use Docker Compose below, then:
 
 ```bash
 pnpm run start:dev
@@ -48,7 +48,7 @@ The API listens on `http://localhost:3000` by default.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `REDIS_URL` | Yes | Redis connection string |
+| `REDIS_URL` | No | Redis-protocol URL (`redis://` or `rediss://`). Works with Redis, Valkey, Dragonfly, KeyDB, and managed providers. Leave unset for Postgres-only dev (no rate limits or cache). Recommended for production abuse protection. |
 | `ENCRYPTION_KEY` | Yes | 32-byte key (64 hex or 44 base64 chars) |
 | `CORS_ORIGIN` | No | Browser CORS: `*` (default) allows any origin for `getsecret-sdk`; or comma-separated origin list |
 | `PORT` | No | HTTP port (default `3000`) |
@@ -83,6 +83,7 @@ docker compose --profile monitoring up -d
 | `POST` | `/s` | Create a secret (JSON body) |
 | `POST` | `/s/multipart` | Create a secret with optional file attachment |
 | `GET` | `/s/:slug` | Read a secret (increments view count; may delete when limits hit) |
+| `GET` | `/health` | Liveness/readiness-style health (Postgres + Redis protection state) |
 | `GET` | `/metrics` | Prometheus metrics |
 
 ### Create a secret

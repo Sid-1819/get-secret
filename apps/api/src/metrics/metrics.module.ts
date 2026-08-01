@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import {
   PrometheusModule,
   makeCounterProvider,
+  makeGaugeProvider,
 } from '@willsoto/nestjs-prometheus';
 
 const secretReadTotalProvider = makeCounterProvider({
@@ -17,7 +18,12 @@ const secretCreateTotalProvider = makeCounterProvider({
 
 const rateLimitChecksTotalProvider = makeCounterProvider({
   name: 'rate_limit_checks_total',
-  help: 'Total rate limit checks (every request hits Redis for rate limiting)',
+  help: 'Total rate limit checks performed by RateLimitGuard',
+});
+
+const redisProtectionsActiveProvider = makeGaugeProvider({
+  name: 'redis_protections_active',
+  help: '1 when Redis is connected (rate limits, wrong-password limits, cache active); 0 when disabled or degraded',
 });
 
 const rateLimitRejectedTotalProvider = makeCounterProvider({
@@ -37,6 +43,7 @@ const rateLimitRejectedTotalProvider = makeCounterProvider({
     secretCreateTotalProvider,
     rateLimitChecksTotalProvider,
     rateLimitRejectedTotalProvider,
+    redisProtectionsActiveProvider,
   ],
   exports: [
     PrometheusModule,
@@ -44,6 +51,7 @@ const rateLimitRejectedTotalProvider = makeCounterProvider({
     secretCreateTotalProvider,
     rateLimitChecksTotalProvider,
     rateLimitRejectedTotalProvider,
+    redisProtectionsActiveProvider,
   ],
 })
 export class MetricsModule {}

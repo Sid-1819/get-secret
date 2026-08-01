@@ -1,4 +1,11 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import type { Gauge } from 'prom-client';
 import Redis from 'ioredis';
 import {
   RATE_LIMIT_KEY_PREFIX,
@@ -14,25 +21,131 @@ import {
   WRONG_PASSWORD_MAX_ATTEMPTS,
 } from '../constants';
 
-@Injectable()
-export class RedisService implements OnModuleDestroy {
-  private client: Redis | null = null;
-  private readonly enabled: boolean;
+export type RedisMode = 'disabled' | 'connected' | 'degraded';
 
-  constructor() {
-    const url = process.env.REDIS_URL;
-    this.enabled = Boolean(url);
-    if (this.enabled) {
+export type RedisStatusSnapshot = {
+  configured: boolean;
+  connected: boolean;
+  protectionsActive: boolean;
+  mode: RedisMode;
+  lastError?: string;
+};
+
+@Injectable()
+export class RedisService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(RedisService.name);
+  private client: Redis | null = null;
+  private readonly configured: boolean;
+  private mode: RedisMode = 'disabled';
+  private lastError: string | undefined;
+
+  constructor(
+    @InjectMetric('redis_protections_active')
+    private readonly redisProtectionsActive: Gauge<string>,
+  ) {
+    const url = process.env.REDIS_URL?.trim();
+    this.configured = Boolean(url);
+    if (this.configured) {
       this.client = new Redis(url!, {
         maxRetriesPerRequest: 3,
         retryStrategy: (times) =>
           times <= 3 ? Math.min(times * 100, 3000) : null,
       });
+      this.client.on('connect', () => {
+        this.setConnected();
+      });
+      this.client.on('error', (err: Error) => {
+        this.markDegraded(err.message);
+      });
     }
   }
 
+  async onModuleInit(): Promise<void> {
+    if (!this.configured) {
+      this.mode = 'disabled';
+      this.syncProtectionsMetric();
+      this.logger.log(
+        'REDIS_URL not set; rate limits and cache disabled; reads use Postgres',
+      );
+      return;
+    }
+
+    try {
+      await this.client!.ping();
+      this.setConnected();
+      this.logger.log('Redis connected; rate limits and cache enabled');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.markDegraded(message);
+      this.logger.warn(
+        `Redis configured but unreachable on startup: ${message}; abuse protections disabled`,
+      );
+    }
+  }
+
+  /** @deprecated Prefer isConfigured — kept for existing cache gating. */
   get isEnabled(): boolean {
-    return this.enabled;
+    return this.configured;
+  }
+
+  get isConfigured(): boolean {
+    return this.configured;
+  }
+
+  get isConnected(): boolean {
+    return this.mode === 'connected';
+  }
+
+  get areProtectionsActive(): boolean {
+    return this.mode === 'connected';
+  }
+
+  getStatus(): RedisStatusSnapshot {
+    const snapshot: RedisStatusSnapshot = {
+      configured: this.configured,
+      connected: this.mode === 'connected',
+      protectionsActive: this.areProtectionsActive,
+      mode: this.mode,
+    };
+    if (this.lastError != null) {
+      snapshot.lastError = this.lastError;
+    }
+    return snapshot;
+  }
+
+  private setConnected(): void {
+    if (this.mode === 'connected') return;
+    this.mode = 'connected';
+    this.lastError = undefined;
+    this.syncProtectionsMetric();
+    if (this.configured) {
+      this.logger.log('Redis connection restored; abuse protections active');
+    }
+  }
+
+  private markDegraded(message: string): void {
+    const previousMode = this.mode;
+    this.mode = 'degraded';
+    this.lastError = message;
+    this.syncProtectionsMetric();
+    if (previousMode !== 'degraded') {
+      this.logger.warn(
+        `Redis degraded: ${message}; abuse protections disabled until reconnected`,
+      );
+    }
+  }
+
+  private syncProtectionsMetric(): void {
+    this.redisProtectionsActive.set(this.areProtectionsActive ? 1 : 0);
+  }
+
+  private handleOperationError(err: unknown): void {
+    const message = err instanceof Error ? err.message : String(err);
+    if (this.mode !== 'degraded') {
+      this.markDegraded(message);
+    } else {
+      this.lastError = message;
+    }
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -41,7 +154,8 @@ export class RedisService implements OnModuleDestroy {
       const raw = await this.client.get(key);
       if (raw == null) return null;
       return JSON.parse(raw) as T;
-    } catch {
+    } catch (err) {
+      this.handleOperationError(err);
       return null;
     }
   }
@@ -55,8 +169,8 @@ export class RedisService implements OnModuleDestroy {
       } else {
         await this.client.set(key, serialized);
       }
-    } catch {
-      // Degrade silently
+    } catch (err) {
+      this.handleOperationError(err);
     }
   }
 
@@ -64,8 +178,8 @@ export class RedisService implements OnModuleDestroy {
     if (!this.client) return;
     try {
       await this.client.del(key);
-    } catch {
-      // Degrade silently
+    } catch (err) {
+      this.handleOperationError(err);
     }
   }
 
@@ -81,7 +195,8 @@ export class RedisService implements OnModuleDestroy {
         await this.client.expire(key, RATE_LIMIT_WINDOW_SEC);
       }
       return count <= RATE_LIMIT_MAX_REQUESTS;
-    } catch {
+    } catch (err) {
+      this.handleOperationError(err);
       return true;
     }
   }
@@ -110,7 +225,8 @@ export class RedisService implements OnModuleDestroy {
         countMinute <= RATE_LIMIT_CREATE_MINUTE_MAX &&
         countDay <= RATE_LIMIT_CREATE_DAILY_MAX
       );
-    } catch {
+    } catch (err) {
+      this.handleOperationError(err);
       return true;
     }
   }
@@ -125,7 +241,8 @@ export class RedisService implements OnModuleDestroy {
       const raw = await this.client.get(key);
       const count = raw ? parseInt(raw, 10) : 0;
       return count >= WRONG_PASSWORD_MAX_ATTEMPTS;
-    } catch {
+    } catch (err) {
+      this.handleOperationError(err);
       return false;
     }
   }
@@ -141,8 +258,8 @@ export class RedisService implements OnModuleDestroy {
       if (count === 1) {
         await this.client.expire(key, WRONG_PASSWORD_WINDOW_SEC);
       }
-    } catch {
-      // Degrade silently
+    } catch (err) {
+      this.handleOperationError(err);
     }
   }
 

@@ -35,7 +35,8 @@ pnpm cli --help # getsecret CLI
 
 | App | Variable | Purpose |
 |-----|----------|---------|
-| `apps/api` | `DATABASE_URL`, `REDIS_URL`, `ENCRYPTION_KEY` | Backend |
+| `apps/api` | `DATABASE_URL`, `ENCRYPTION_KEY` | Backend (required) |
+| `apps/api` | `REDIS_URL` | Optional — rate limits and cache; recommended for production |
 | `apps/web` | `VITE_API_URL` | API origin for SDK in browser |
 | `apps/extension` | `VITE_API_URL`, `VITE_WEB_URL` | API + share link origin |
 | CLI | `GETSECRET_API_URL`, `GETSECRET_WEB_URL` or `~/.config/getsecret/config.json` | API + share links |

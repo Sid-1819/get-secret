@@ -7,6 +7,7 @@ import { SecretsModule } from './secrets/secrets.module';
 import { PasswordModule } from './password/password.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { RedisModule } from './redis/redis.module';
     PrismaModule,
     RedisModule,
     SecretsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
