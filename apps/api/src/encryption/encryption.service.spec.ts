@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { EncryptionService } from './encryption.service';
 
 describe('EncryptionService', () => {
-  const validKeyHex = '0'.repeat(64);
+  const validKeyHex = 'deadbeef'.repeat(8);
   let service: EncryptionService;
 
   beforeEach(() => {
@@ -81,6 +81,13 @@ describe('EncryptionService', () => {
       process.env.ENCRYPTION_KEY = 'not-hex-or-base64';
       expect(() => new EncryptionService()).toThrow(
         'ENCRYPTION_KEY must be 32 bytes',
+      );
+    });
+
+    it('throws when ENCRYPTION_KEY is all zeros', () => {
+      process.env.ENCRYPTION_KEY = '0'.repeat(64);
+      expect(() => new EncryptionService()).toThrow(
+        'ENCRYPTION_KEY is too weak (all-zero key)',
       );
     });
   });

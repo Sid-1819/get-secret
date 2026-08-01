@@ -19,6 +19,14 @@ function parseKey(raw: string): Buffer {
   );
 }
 
+function assertStrongKey(key: Buffer): void {
+  if (key.every((byte) => byte === 0)) {
+    throw new Error(
+      'ENCRYPTION_KEY is too weak (all-zero key). Generate one with: openssl rand -hex 32',
+    );
+  }
+}
+
 @Injectable()
 export class EncryptionService implements OnModuleInit {
   private key: Buffer;
@@ -34,6 +42,7 @@ export class EncryptionService implements OnModuleInit {
         `ENCRYPTION_KEY must be ${KEY_LENGTH_BYTES} bytes (got ${this.key.length})`,
       );
     }
+    assertStrongKey(this.key);
   }
 
   onModuleInit(): void {

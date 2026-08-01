@@ -83,7 +83,7 @@ describe('SecretsService', () => {
     mockRedis.recordWrongPasswordAttempt.mockResolvedValue(undefined);
     mockPasswordService.compare.mockResolvedValue(true);
     mockPasswordService.hash.mockResolvedValue('hashedpassword');
-    process.env.ENCRYPTION_KEY = '0'.repeat(64);
+    process.env.ENCRYPTION_KEY = 'deadbeef'.repeat(8);
     secureSecretCreate.mockReset();
     prismaServiceMock.secureSecretAttachment.findFirst.mockReset();
     prismaServiceMock.secureSecretAttachment.findFirst.mockResolvedValue(null);

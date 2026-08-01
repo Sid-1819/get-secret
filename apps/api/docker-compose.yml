@@ -1,7 +1,6 @@
 # Local development: nginx on :8090 (API + optional built UI). Vite dev UI on :8080 proxies API to :8090.
 # Optional metrics stack: docker compose --profile monitoring up -d
-# Production: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-# Required prod env vars are enforced in docker-compose.prod.yml (see file header).
+# Set ENCRYPTION_KEY in .env before starting (generate: openssl rand -hex 32).
 
 services:
   postgres:
@@ -54,8 +53,7 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:8080}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
-      # Dev only. Production must set ENCRYPTION_KEY (see docker-compose.prod.yml).
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set ENCRYPTION_KEY in .env — generate with: openssl rand -hex 32}
     healthcheck:
       test:
         - CMD

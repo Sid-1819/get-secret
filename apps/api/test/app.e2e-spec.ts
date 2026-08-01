@@ -29,7 +29,7 @@ describe('App (e2e)', () => {
 
   beforeEach(async () => {
     if (!process.env.ENCRYPTION_KEY) {
-      process.env.ENCRYPTION_KEY = '0'.repeat(64);
+      process.env.ENCRYPTION_KEY = 'deadbeef'.repeat(8);
     }
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
