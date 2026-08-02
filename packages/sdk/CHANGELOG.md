@@ -1,5 +1,11 @@
 # @getsecret/sdk
 
+## 2.0.1
+
+### Patch Changes
+
+- fixed attachment files
+
 ## 2.0.0
 
 ### Major Changes

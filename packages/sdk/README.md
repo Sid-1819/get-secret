@@ -55,3 +55,13 @@ Create responses: `{ slug, expiresAt, maxViews }` — no share URL. Build links 
 ## Legacy names
 
 `createNote` / `getNote` and `CreateNoteInput` remain as aliases for `createSecret` / `getSecret`.
+
+## Releasing
+
+Releases use [Changesets](https://github.com/changesets/changesets) from the monorepo root (not CI):
+
+1. `pnpm changeset` — add a changeset after SDK changes merge.
+2. `pnpm changeset:version` — apply version bump and update `CHANGELOG.md`.
+3. `pnpm changeset:publish` — build and publish to npm.
+
+See [`.changeset/README.md`](../../.changeset/README.md) for details.
