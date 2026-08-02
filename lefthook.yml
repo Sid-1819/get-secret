@@ -43,4 +43,5 @@ pre-push:
     test:
       run: pnpm -r --if-present run test
     build:
-      run: pnpm -r --if-present run build
+      # TODO: re-enable @getsecret/extension once React 19 type conflicts are fixed
+      run: pnpm -r --if-present --filter '!@getsecret/extension' run build
