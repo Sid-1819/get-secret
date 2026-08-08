@@ -471,6 +471,25 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@20.0.3)(lightningcss@1.33.0)(terser@5.49.0)
 
+  packages/cli:
+    dependencies:
+      '@getsecret/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(@swc/core@1.15.46)(jiti@2.7.0)(postcss@8.5.25)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(jsdom@20.0.3)(lightningcss@1.33.0)(terser@5.49.0)
+
   packages/sdk:
     devDependencies:
       '@types/node':
@@ -1701,12 +1720,11 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
-  '@napi-rs/wasm-runtime@1.2.2':
-    resolution: {integrity: sha512-JfB4kuJQjaoHuCTseIINHtHWeJnvgEcxjwA5t/Y00ZgaOO1Crz3fjT/p8kT28zA/Caz7oiUMn3d6H2yOVCVwuw==}
-    engines: {node: ^20.19.0 || ^22.13.0 || >=23.5.0}
+  '@napi-rs/wasm-runtime@1.1.6':
+    resolution: {integrity: sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==}
     peerDependencies:
-      '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.3
-      '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.3
+      '@emnapi/core': ^1.7.1
+      '@emnapi/runtime': ^1.7.1
 
   '@napi-rs/wasm-runtime@1.2.2':
     resolution: {integrity: sha512-JfB4kuJQjaoHuCTseIINHtHWeJnvgEcxjwA5t/Y00ZgaOO1Crz3fjT/p8kT28zA/Caz7oiUMn3d6H2yOVCVwuw==}
@@ -3970,8 +3988,8 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
-  baseline-browser-mapping@2.11.10:
-    resolution: {integrity: sha512-35JEvJ5/KKlbCHjMCsONI2w6HE88STjVdHk+C7d8LtcFxUjZR1KeLP9izofn2qs0KUxX5r4z73bwH/rd+JHacw==}
+  baseline-browser-mapping@2.11.9:
+    resolution: {integrity: sha512-cp447VUsGS07+n1Dqf7YSQ8maeJrjEhaDxTm1ZefbqDtypHBC5GzGMQbklR6IPR13Y8OAJRHZWEMtZipJLCttg==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -9170,7 +9188,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@napi-rs/wasm-runtime@1.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
+  '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
     dependencies:
       '@emnapi/core': 1.10.0
       '@emnapi/runtime': 1.10.0
@@ -11182,7 +11200,7 @@ snapshots:
     dependencies:
       '@emnapi/core': 1.10.0
       '@emnapi/runtime': 1.10.0
-      '@napi-rs/wasm-runtime': 1.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
     optional: true
 
   '@unrs/resolver-binding-win32-arm64-msvc@1.12.2':
@@ -11615,7 +11633,7 @@ snapshots:
 
   baseline-browser-mapping@2.11.1: {}
 
-  baseline-browser-mapping@2.11.10: {}
+  baseline-browser-mapping@2.11.9: {}
 
   bcryptjs@2.4.3: {}
 
@@ -13878,7 +13896,7 @@ snapshots:
     dependencies:
       '@next/env': 16.2.11
       '@swc/helpers': 0.5.15
-      baseline-browser-mapping: 2.11.10
+      baseline-browser-mapping: 2.11.9
       caniuse-lite: 1.0.30001806
       postcss: 8.4.31
       react: 18.3.1

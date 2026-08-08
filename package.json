@@ -11,10 +11,10 @@
     "dev:web": "pnpm --filter @getsecret/web dev",
     "dev:playground": "pnpm --filter @getsecret/web dev",
     "dev:extension": "pnpm --filter @getsecret/extension dev",
-    "cli": "pnpm --filter getsecret run cli",
+    "cli": "pnpm --filter @getsecret/cli run cli",
     "changeset": "changeset",
     "changeset:version": "changeset version",
-    "changeset:publish": "pnpm --filter @getsecret/sdk run build && changeset publish"
+    "changeset:publish": "pnpm --filter @getsecret/sdk run build && pnpm --filter @getsecret/cli run build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",

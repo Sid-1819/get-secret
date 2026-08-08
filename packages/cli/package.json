@@ -1,7 +1,7 @@
 {
-  "name": "@getsecret/sdk",
-  "version": "2.0.1",
-  "description": "TypeScript client for the getsecret secure secrets HTTP API",
+  "name": "@getsecret/cli",
+  "version": "2.0.0",
+  "description": "Terminal CLI for the getsecret secure secrets HTTP API",
   "repository": {
     "type": "git",
     "url": "https://github.com/Sid-1819/getsecret.git"
@@ -18,31 +18,22 @@
     "node": ">=18"
   },
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.cjs"
-      }
-    }
+  "bin": {
+    "getsecret": "./dist/index.js"
   },
   "files": [
     "dist"
   ],
-  "sideEffects": false,
   "scripts": {
+    "cli": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsup",
     "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@getsecret/sdk": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

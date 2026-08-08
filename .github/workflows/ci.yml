@@ -44,8 +44,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter getsecret run typecheck
-      - run: pnpm --filter getsecret run build
+      - run: pnpm --filter @getsecret/sdk run build
+      - run: pnpm --filter @getsecret/cli run typecheck
+      - run: pnpm --filter @getsecret/cli run test
+      - run: pnpm --filter @getsecret/cli run build
 
   web:
     runs-on: ubuntu-latest

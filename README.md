@@ -11,7 +11,7 @@ apps/
   extension/   Chrome extension (@getsecret/extension)
 packages/
   sdk/         TypeScript client (@getsecret/sdk)
-  cli/         Terminal CLI (getsecret)
+  cli/         Terminal CLI (@getsecret/cli, binary: getsecret)
 ```
 
 ## Dependency graph
@@ -28,7 +28,7 @@ The API returns `{ slug, expiresAt, maxViews }` — clients build share URLs wit
 pnpm install
 pnpm dev:api    # API on :3000 (or `docker compose up` in apps/api → :8090 via nginx)
 pnpm dev:web    # Marketing site on :8080 (not part of docker-compose)
-pnpm cli --help # getsecret CLI
+pnpm cli -- create "hello"  # getsecret CLI
 ```
 
 ### Environment
@@ -56,7 +56,7 @@ pnpm cli --help # getsecret CLI
 ## Publishing
 
 - **SDK:** `@getsecret/sdk` via Changesets
-- **CLI:** `getsecret` via Changesets
+- **CLI:** `@getsecret/cli` via Changesets (`npm install -g @getsecret/cli`)
 - **API:** Docker image (`apps/api`)
 - **Web:** Vercel (or static host)
 

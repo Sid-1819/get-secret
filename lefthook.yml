@@ -26,7 +26,7 @@ pre-commit:
 
     cli-typecheck:
       glob: "packages/cli/**/*.ts"
-      run: pnpm --filter getsecret run typecheck
+      run: pnpm --filter @getsecret/cli run typecheck
 
     web-eslint:
       root: "apps/web"

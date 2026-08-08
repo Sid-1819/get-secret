@@ -41,10 +41,10 @@ Browser apps should pass `baseUrl` from `import.meta.env.VITE_API_URL`. Same-ori
 
 ## CLI
 
-Install the separate `getsecret` package for terminal usage:
+Install the separate `@getsecret/cli` package for terminal usage:
 
 ```bash
-npm install -g getsecret
+npm install -g @getsecret/cli
 getsecret create "hello"
 ```
 
