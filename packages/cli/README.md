@@ -24,22 +24,23 @@ getsecret get <slug>
 getsecret get <slug> --password "passphrase"
 ```
 
+`create` prints the API resource URL (e.g. `https://api.getsecret.visionly.dev/s/<slug>`). Fetch it to get JSON.
+
 ## Configuration
 
 Priority (first wins):
 
-1. CLI flags: `--api-url`, `--web-url`
-2. Environment: `GETSECRET_API_URL`, `GETSECRET_WEB_URL`
+1. CLI flag: `--api-url`
+2. Environment: `GETSECRET_API_URL`
 3. File: `~/.config/getsecret/config.json`
 
 ```json
 {
-  "apiUrl": "https://api.getsecret.visionly.dev",
-  "webUrl": "https://getsecret.visionly.dev"
+  "apiUrl": "https://api.getsecret.visionly.dev"
 }
 ```
 
-Defaults match `@getsecret/sdk` production origins.
+Default matches `@getsecret/sdk` production API origin.
 
 ## Releasing
 

@@ -22,8 +22,6 @@ describe("parseCliArgs", () => {
         "pw",
         "--api-url",
         "https://api.example",
-        "--web-url",
-        "https://web.example",
       ]),
     ).toMatchObject({
       command: "create",
@@ -32,7 +30,6 @@ describe("parseCliArgs", () => {
       expiresAt: "2026-12-31T00:00:00Z",
       password: "pw",
       apiUrl: "https://api.example",
-      webUrl: "https://web.example",
     });
   });
 

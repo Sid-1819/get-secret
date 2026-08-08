@@ -13,7 +13,6 @@ Usage:
 
 Global options:
   --api-url <url>   API origin (overrides GETSECRET_API_URL / config file)
-  --web-url <url>   Web origin for share links (overrides GETSECRET_WEB_URL / config file)
 
 Create options:
   --max-views <n>   Maximum number of views
@@ -29,7 +28,6 @@ type ParsedCli = {
   content?: string;
   slug?: string;
   apiUrl?: string;
-  webUrl?: string;
   maxViews?: number;
   expiresAt?: string;
   password?: string;
@@ -51,7 +49,6 @@ export function parseCliArgs(argv: string[]): ParsedCli {
     options: {
       help: { type: "boolean", short: "h" },
       "api-url": { type: "string" },
-      "web-url": { type: "string" },
       "max-views": { type: "string" },
       "expires-at": { type: "string" },
       password: { type: "string" },
@@ -63,7 +60,6 @@ export function parseCliArgs(argv: string[]): ParsedCli {
   const result: ParsedCli = {
     command,
     apiUrl: values["api-url"],
-    webUrl: values["web-url"],
     expiresAt: values["expires-at"],
     password: values.password,
     help: values.help === true,
@@ -93,7 +89,6 @@ export async function runCli(argv: string[]): Promise<void> {
 
   const config = resolveCliConfig({
     apiUrl: parsed.apiUrl,
-    webUrl: parsed.webUrl,
   });
 
   switch (parsed.command) {

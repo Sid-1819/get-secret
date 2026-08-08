@@ -22,7 +22,7 @@ Monorepo workspace:
 ## Usage
 
 ```ts
-import { createSecretClient, buildShareUrl } from "@getsecret/sdk";
+import { createSecretClient } from "@getsecret/sdk";
 
 const client = createSecretClient({
   baseUrl: "https://api.getsecret.visionly.dev",
@@ -33,8 +33,8 @@ const created = await client.createSecret({
   maxViews: 1,
 });
 
-const shareUrl = buildShareUrl("https://getsecret.visionly.dev", created.slug);
 const note = await client.getSecret(created.slug);
+// created: { slug, expiresAt, maxViews }
 ```
 
 Browser apps should pass `baseUrl` from `import.meta.env.VITE_API_URL`. Same-origin dev can use `baseUrl: ""`.
@@ -50,7 +50,7 @@ getsecret create "hello"
 
 ## API contract
 
-Create responses: `{ slug, expiresAt, maxViews }` — no share URL. Build links client-side with `buildShareUrl(webOrigin, slug)`.
+Create responses: `{ slug, expiresAt, maxViews }`. Website share links are built by each client app (not the SDK).
 
 ## Legacy names
 

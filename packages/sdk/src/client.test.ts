@@ -179,15 +179,3 @@ describe("parseErrorBody", () => {
     expect(parseErrorBody("not json")).toBeUndefined();
   });
 });
-
-describe("buildShareUrl", () => {
-  it("builds share path from origin and slug", async () => {
-    const { buildShareUrl } = await import("./share-url.js");
-    expect(buildShareUrl("https://getsecret.visionly.dev", "abc")).toBe(
-      "https://getsecret.visionly.dev/s/abc",
-    );
-    expect(buildShareUrl("https://getsecret.visionly.dev/", "abc")).toBe(
-      "https://getsecret.visionly.dev/s/abc",
-    );
-  });
-});

@@ -20,7 +20,7 @@ packages/
 API  ←  @getsecret/sdk  ←  web | extension | CLI
 ```
 
-The API returns `{ slug, expiresAt, maxViews }` — clients build share URLs with `buildShareUrl(origin, slug)`.
+The API returns `{ slug, expiresAt, maxViews }` — clients build share URLs in their own app layer.
 
 ## Getting started
 
@@ -39,7 +39,7 @@ pnpm cli -- create "hello"  # getsecret CLI
 | `apps/api` | `REDIS_URL` | Optional — rate limits and cache; recommended for production |
 | `apps/web` | `VITE_API_URL` | API origin for SDK in browser |
 | `apps/extension` | `VITE_API_URL`, `VITE_WEB_URL` | API + share link origin |
-| CLI | `GETSECRET_API_URL`, `GETSECRET_WEB_URL` or `~/.config/getsecret/config.json` | API + share links |
+| CLI | `GETSECRET_API_URL` or `~/.config/getsecret/config.json` | API origin |
 
 ## Scripts
 

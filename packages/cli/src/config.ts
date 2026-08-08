@@ -3,21 +3,16 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_SECRET_API_ORIGIN } from "@getsecret/sdk";
 
-export const DEFAULT_WEB_ORIGIN = "https://getsecret.visionly.dev";
-
 export type CliConfig = {
   apiUrl: string;
-  webUrl: string;
 };
 
 export type CliConfigOverrides = {
   apiUrl?: string;
-  webUrl?: string;
 };
 
 type ConfigFile = {
   apiUrl?: string;
-  webUrl?: string;
 };
 
 function normalizeOrigin(value: string): string {
@@ -54,14 +49,5 @@ export function resolveCliConfig(overrides: CliConfigOverrides = {}): CliConfig 
     )!,
   );
 
-  const webUrl = normalizeOrigin(
-    firstDefined(
-      overrides.webUrl,
-      process.env.GETSECRET_WEB_URL,
-      file.webUrl,
-      DEFAULT_WEB_ORIGIN,
-    )!,
-  );
-
-  return { apiUrl, webUrl };
+  return { apiUrl };
 }

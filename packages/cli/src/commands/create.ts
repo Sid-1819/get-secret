@@ -1,6 +1,5 @@
 import {
   ApiError,
-  buildShareUrl,
   createSecretClient,
   type CreateNoteInput,
 } from "@getsecret/sdk";
@@ -26,8 +25,7 @@ export async function runCreateCommand(
 
   try {
     const created = await client.createSecret(input);
-    const shareUrl = buildShareUrl(config.webUrl, created.slug);
-    console.log(shareUrl);
+    console.log(`${config.apiUrl}/s/${created.slug}`);
   } catch (error) {
     if (error instanceof ApiError) {
       console.error(error.message);

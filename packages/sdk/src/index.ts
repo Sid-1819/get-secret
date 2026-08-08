@@ -1,4 +1,3 @@
-export { buildShareUrl } from "./share-url.js";
 export { createSecretClient, resolveBaseUrl } from "./client.js";
 export type { SecretClient } from "./client.js";
 export {
