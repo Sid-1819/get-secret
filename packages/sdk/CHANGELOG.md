@@ -1,5 +1,11 @@
 # @getsecret/sdk
 
+## 2.0.2
+
+### Patch Changes
+
+- fix : enctyption note password fixed
+
 ## 2.0.1
 
 ### Patch Changes
