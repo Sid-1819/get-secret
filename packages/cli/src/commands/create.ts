@@ -1,6 +1,7 @@
 import {
   ApiError,
   createSecretClient,
+  encryptNoteForPassword,
   type CreateNoteInput,
 } from "@getsecret/sdk";
 import type { CliConfig } from "../config.js";
@@ -18,10 +19,15 @@ export async function runCreateCommand(
 ): Promise<void> {
   const client = createSecretClient({ baseUrl: config.apiUrl });
 
-  const input: CreateNoteInput = { content: options.content };
+  const input: CreateNoteInput = {
+    content: options.content.trim(),
+  };
   if (options.maxViews != null) input.maxViews = options.maxViews;
   if (options.expiresAt) input.expiresAt = options.expiresAt;
-  if (options.password) input.password = options.password;
+  if (options.password) {
+    input.content = await encryptNoteForPassword(input.content, options.password);
+    input.password = options.password;
+  }
 
   try {
     const created = await client.createSecret(input);
