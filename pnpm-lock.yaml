@@ -438,8 +438,8 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0(eslint@9.39.5(jiti@1.21.7))
       eslint-plugin-react-refresh:
-        specifier: ^0.4.20
-        version: 0.4.26(eslint@9.39.5(jiti@1.21.7))
+        specifier: ^0.5.4
+        version: 0.5.4(eslint@9.39.5(jiti@1.21.7))
       globals:
         specifier: ^17.9.0
         version: 17.9.0
@@ -3968,8 +3968,8 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
-  baseline-browser-mapping@2.11.13:
-    resolution: {integrity: sha512-k9HNuUVMlqVjQ9UHzfPjIqiDbWw7WqT1AoT7GL8VwvF3r0ZfArtgiSPAlmupyNquNgOJHTuH4CKYf8ttMTWBTQ==}
+  baseline-browser-mapping@2.11.14:
+    resolution: {integrity: sha512-JyJ954WzuIR8/FFzX0o5krdSTrBAkcCSRfWSleRsIHSWV+cZe2FI1PKggVkFke1hBldRs+LRxUczzE9iPmgZww==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -4707,10 +4707,10 @@ packages:
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
 
-  eslint-plugin-react-refresh@0.4.26:
-    resolution: {integrity: sha512-1RETEylht2O6FM/MvgnyvT+8K21wLqDNg4qD51Zj3guhjt433XbnnkVttHMyaVyAFD03QSV4LPS5iE3VQmO7XQ==}
+  eslint-plugin-react-refresh@0.5.4:
+    resolution: {integrity: sha512-7bqTKz7T0r+HKWFarNXByDE9/5+73wI2ru+M3zuqGbR7s/b/5/pQJXZoufWlrngqGqoZto73ZkGumCdLxk+4rw==}
     peerDependencies:
-      eslint: '>=8.40'
+      eslint: ^9 || ^10
 
   eslint-scope@5.1.1:
     resolution: {integrity: sha512-2NxwbF/hZ0KpepYN0cNbo+FN6XoK7GaHlQhgx/hIZl6Va0bF45RQOOwhLIy8lQDbuCiadSLCBnH2CFYquit5bw==}
@@ -11546,7 +11546,7 @@ snapshots:
 
   baseline-browser-mapping@2.11.1: {}
 
-  baseline-browser-mapping@2.11.13: {}
+  baseline-browser-mapping@2.11.14: {}
 
   bcryptjs@2.4.3: {}
 
@@ -12249,7 +12249,7 @@ snapshots:
     dependencies:
       eslint: 9.39.5(jiti@1.21.7)
 
-  eslint-plugin-react-refresh@0.4.26(eslint@9.39.5(jiti@1.21.7)):
+  eslint-plugin-react-refresh@0.5.4(eslint@9.39.5(jiti@1.21.7)):
     dependencies:
       eslint: 9.39.5(jiti@1.21.7)
 
@@ -13798,7 +13798,7 @@ snapshots:
     dependencies:
       '@next/env': 16.2.11
       '@swc/helpers': 0.5.15
-      baseline-browser-mapping: 2.11.13
+      baseline-browser-mapping: 2.11.14
       caniuse-lite: 1.0.30001809
       postcss: 8.4.31
       react: 18.3.1
