@@ -18,6 +18,13 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
-    "lefthook": "^2.1.10"
+    "@nestjs/testing": "^11.2.1",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "lefthook": "^2.1.10",
+    "ts-jest": "^29.4.12"
+  },
+  "dependencies": {
+    "supertest": "^7.2.2"
   }
 }
