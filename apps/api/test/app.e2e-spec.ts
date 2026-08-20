@@ -3,9 +3,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
+
 import { AppModule } from '../src/app.module';
 import { randomBytes } from 'node:crypto';
-
+import { expect, describe, beforeEach, it } from '@jest/globals';
 function makeClientSecretEnvelope(): string {
   return JSON.stringify({
     v: 1,
@@ -46,10 +47,7 @@ describe('App (e2e)', () => {
   });
 
   it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+    return request(app.getHttpServer()).get('/').expect(404);
   });
 
   describe('GET /health', () => {
