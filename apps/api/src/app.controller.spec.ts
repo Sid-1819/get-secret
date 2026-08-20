@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { describe, beforeEach } from '@jest/globals';
+import { describe, beforeEach, expect, it } from '@jest/globals';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -13,5 +13,8 @@ describe('AppController', () => {
     }).compile();
 
     appController = app.get<AppController>(AppController);
+  });
+  it('should be defined', () => {
+    expect(appController).toBeDefined();
   });
 });
