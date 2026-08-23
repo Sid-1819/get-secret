@@ -20,6 +20,8 @@ import {
 } from './attachment.constants';
 
 const SLUG_BYTES = 12;
+const SLUG_MAX_ATTEMPTS = 8;
+const SLUG_RETRY_JITTER_MS = 10;
 
 /** Fields used from multer memory uploads (`FileInterceptor` default storage). */
 type UploadedSecretFile = {
@@ -293,7 +295,7 @@ export class SecretsService {
     const expiresAt = dto.expiresAt ? new Date(dto.expiresAt) : undefined;
     const maxViews = dto.maxViews ?? undefined;
 
-    for (let attempt = 0; attempt < 8; attempt++) {
+    for (let attempt = 0; attempt < SLUG_MAX_ATTEMPTS; attempt++) {
       const slug = generateSlug();
       try {
         const secret = await this.prisma.$transaction(async (tx) => {
@@ -327,6 +329,11 @@ export class SecretsService {
           err instanceof Prisma.PrismaClientKnownRequestError &&
           err.code === 'P2002';
         if (!isUniqueViolation) throw err;
+
+        if (attempt < SLUG_MAX_ATTEMPTS - 1) {
+          const delay = Math.floor(Math.random() * SLUG_RETRY_JITTER_MS);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
       }
     }
     throw new Error('Could not allocate unique slug');
