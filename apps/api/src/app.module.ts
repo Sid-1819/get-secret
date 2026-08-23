@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { EncryptionModule } from './encryption/encryption.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { SecretsModule } from './secrets/secrets.module';
@@ -20,6 +19,6 @@ import { HealthModule } from './health/health.module';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  
 })
 export class AppModule {}
