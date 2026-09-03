@@ -24,7 +24,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@nestjs/common": "^11.0.1",
+    "@nestjs/common": "^11.2.3",
     "@nestjs/core": "^11.1.28",
     "@nestjs/platform-express": "^11.1.29",
     "@prisma/adapter-pg": "^7.2.0",
