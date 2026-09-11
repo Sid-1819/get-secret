@@ -175,7 +175,7 @@ describe('SecretsService', () => {
       expect(mockPasswordService.hash).not.toHaveBeenCalled();
       expect(typeof call.data.slug).toBe('string');
       expect((call.data.slug as string).length).toBeGreaterThan(0);
-      expect(call.data.expiresAt).toBeUndefined();
+      expect(call.data.expiresAt).toBeInstanceOf(Date);
       expect(call.data.maxViews).toBeUndefined();
       expect(mockSecretCreateTotal.inc).toHaveBeenCalledTimes(1);
     });
@@ -595,6 +595,50 @@ describe('SecretsService', () => {
         'correct',
         'hashed',
       );
+    });
+    it('allows only one concurrent read when maxViews is 1', async () => {
+      const plainContent = 'concurrent secret';
+      const encryptedContent = encryptionService.encrypt(plainContent);
+
+      const dbSecret = {
+        id: 'id-1',
+        slug: 'concurrent-slug',
+        content: encryptedContent,
+        payloadMode: SecretPayloadMode.SERVER_ENCRYPTED,
+        hasAttachments: false,
+        passwordHash: null,
+        expiresAt: null,
+        lastViewedAt: null,
+        maxViews: 1,
+        viewCount: 0,
+        isDeleted: false,
+        createdAt: new Date(),
+        createdBy: null,
+        userId: null,
+      };
+
+      (prisma.secureSecret.findFirst as jest.Mock).mockResolvedValue(dbSecret);
+
+      (prisma.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ ...dbSecret, viewCount: 1, isDeleted: true }])
+        .mockResolvedValueOnce([]);
+
+      const [result1, result2] = await Promise.all([
+        service.readBySlug('concurrent-slug'),
+        service.readBySlug('concurrent-slug'),
+      ]);
+
+      const results = [result1, result2];
+
+      const successfulReads = results.filter(
+        (result) => result?.success === true,
+      );
+
+      const failedReads = results.filter((result) => result === null);
+
+      expect(successfulReads).toHaveLength(1);
+      expect(failedReads).toHaveLength(1);
+      expect(mockSecretReadTotal.inc).toHaveBeenCalledTimes(1);
     });
   });
 });

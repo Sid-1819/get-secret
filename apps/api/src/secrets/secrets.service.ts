@@ -4,7 +4,11 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import type { Counter } from 'prom-client';
 import type { SecureSecret } from '@prisma/client';
 import { Prisma, SecretPayloadMode } from '@prisma/client';
-import { CACHE_KEY_PREFIX, CACHE_MAX_TTL_SEC } from '../constants';
+import {
+  CACHE_KEY_PREFIX,
+  CACHE_MAX_TTL_SEC,
+  SECRET_MAX_TTL_SEC,
+} from '../constants';
 import { EncryptionService } from '../encryption/encryption.service';
 import { PasswordService } from '../password/password.service';
 import type { CreateSecretDto } from './dto/create-secret.dto';
@@ -290,7 +294,12 @@ export class SecretsService {
       ? await this.passwordService.hash(trimmedPassword)
       : undefined;
 
-    const expiresAt = dto.expiresAt ? new Date(dto.expiresAt) : undefined;
+    const expiresAt = dto.expiresAt
+      ? new Date(dto.expiresAt)
+      : new Date(
+          Date.now() +
+            Number(process.env.SECRET_MAX_TTL_SEC ?? SECRET_MAX_TTL_SEC) * 1000,
+        );
     const maxViews = dto.maxViews ?? undefined;
 
     for (let attempt = 0; attempt < 8; attempt++) {
