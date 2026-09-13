@@ -13,6 +13,8 @@ export const RATE_LIMIT_CLIENT_KEY_PREFIX = 'ratelimit:client:';
 /** Secret cache */
 export const CACHE_KEY_PREFIX = 'secret:';
 export const CACHE_MAX_TTL_SEC = 3600; // 1 hour
+export const SECRET_MAX_TTL_SEC = 604800; // 7 dias
+
 
 /** Per-slug wrong password rate limit (brute-force protection) */
 export const WRONG_PASSWORD_KEY_PREFIX = 'wrong_password:';

@@ -52,6 +52,7 @@ The API listens on `http://localhost:3000` by default.
 | `ENCRYPTION_KEY` | Yes | 32-byte key (64 hex or 44 base64 chars) |
 | `CORS_ORIGIN` | No | Browser CORS: `*` (default) allows any origin for `getsecret-sdk`; or comma-separated origin list |
 | `PORT` | No | HTTP port (default `3000`) |
+| `SECRET_MAX_TTL_SEC` | No | Default secret lifetime in seconds when `expiresAt` is omitted. Example: `604800` = 7 days |
 
 See [`.env.example`](.env.example) for defaults.
 
@@ -111,8 +112,15 @@ Response:
   "maxViews": 1
 }
 ```
-
 Passphrase-protected reads use the `X-Secret-Password` header.
+
+If `expiresAt` is omitted, the server automatically sets an expiration time using `SECRET_MAX_TTL_SEC`. The effective `expiresAt` is returned in the creation response.
+
+For example, with:
+
+```env
+SECRET_MAX_TTL_SEC=604800
+```
 
 For a typed client and CLI, see the [SDK](../sdk/README.md).
 
